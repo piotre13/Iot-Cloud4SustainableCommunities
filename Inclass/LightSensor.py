@@ -3,9 +3,6 @@ import random
 import sys
 from datetime import datetime
 
-print(os.getcwd())
-sys.path.append('2025_2026/1-OOP')
-
 from BaseSensor import Sensor
 
 
