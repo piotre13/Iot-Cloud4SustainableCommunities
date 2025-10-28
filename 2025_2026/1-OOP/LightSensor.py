@@ -4,7 +4,7 @@ import sys
 from datetime import datetime
 
 print(os.getcwd())
-sys.path.append('2025_2026/1-OOP')
+sys.path.append("2025_2026/1-OOP")
 
 from BaseSensor import Sensor
 
@@ -24,7 +24,7 @@ class LightSensor(Sensor):
         elif 18 <= current_hour < 20:  # Dusk
             base_light = 80 - (current_hour - 18) * 35  # 80-10 lux
         else:  # Night (20-6)
-            base_light = 2 + random.exponential(3)  # 0-15 lux (mostly low)
+            base_light = 2 + random.gauss(0, 3)  # 0-15 lux (mostly low)
 
         # Add some realistic noise and weather variations
         weather_factor = random.uniform(0.7, 1.3)  # Simulate cloud coverage
