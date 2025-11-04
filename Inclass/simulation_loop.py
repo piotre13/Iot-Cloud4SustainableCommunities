@@ -2,9 +2,9 @@ import os
 import sys
 import time
 
-from Controller import Controller
-from LightSensor import LightSensor as sensor
-from LightSwitch import LightSwitch as actuator
+from Inclass.Controller_ex import Controller
+from Inclass.LightSensor_ex import LightSensor as sensor
+from Inclass.LightSwitch_ex import LightSwitch as actuator
 
 sensor_list = []
 actuator_list = []

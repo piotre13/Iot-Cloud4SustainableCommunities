@@ -3,7 +3,7 @@ import random
 import sys
 from datetime import datetime
 
-from BaseSensor import Sensor
+from Inclass.BaseSensor_ex import Sensor
 
 
 class LightSensor(Sensor):

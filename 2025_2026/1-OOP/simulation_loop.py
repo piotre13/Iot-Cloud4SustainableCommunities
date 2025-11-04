@@ -35,7 +35,7 @@ while True:
                 )
                 continue
 
-            controller = Controller(TH=1, rooms=rooms)  # Set a default threshold
+            controller = Controller(TH=700, rooms=rooms)  # Set a default threshold
             if not controller.check_rooms():
                 continue
             for _ in range(simul_ts):

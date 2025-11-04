@@ -1,5 +1,5 @@
 
-from BaseActuator import BaseActuator as act
+from Inclass.BaseActuator_ex import BaseActuator as act
 
 class LightActuator(act):
     def __init__(self, actuator_id, room):

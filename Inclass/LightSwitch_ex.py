@@ -1,4 +1,4 @@
-from BaseActuator import Actuator
+from Inclass.BaseActuator_ex import Actuator
 
 
 class LightSwitch(Actuator):

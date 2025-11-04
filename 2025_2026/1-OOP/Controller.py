@@ -2,18 +2,17 @@ class Controller:
     def __init__(self, TH, rooms):
         self.threshold = TH
         self.rooms = rooms
+
     def check_rooms(self):
-        correct=True
+        correct = True
         for room, (sensor_id, actuator) in self.rooms.items():
             if sensor_id is None:
                 print(f"Room '{room}' is missing a sensor.")
-                correct=False
+                correct = False
             if actuator is None:
                 print(f"Room '{room}' is missing an actuator.")
-                correct=False
+                correct = False
         return correct
-
-   
 
     def control(self, sensed_data):
         for room, (sensor_id, actuator) in self.rooms.items():

@@ -1,4 +1,4 @@
-from LightSensor import LightSensor
+from Inclass.LightSensor_ex import LightSensor
 import time
 class LightSensor_independent(LightSensor):
     def __init__(self, sensor_id, room):

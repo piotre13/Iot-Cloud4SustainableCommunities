@@ -48,7 +48,7 @@ class Controller_base:
 
 
 if __name__ == "__main__":
-    from LightActuator import LightActuator
+    from Inclass.LightActuator_ex import LightActuator
     from Inclass.LightSensor_class import LightSensor
 
     sensor1 = LightSensor("LS-001", "LivingRoom")
