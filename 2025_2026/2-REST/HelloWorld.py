@@ -30,6 +30,8 @@ if __name__ == "__main__":
         }
     }
     webService = HelloWorld()
-    cherrypy.tree.mount(webService, "/", conf)
+
+    cherrypy.tree.mount(webService, "/ciao", conf)
+
     cherrypy.engine.start()
     cherrypy.engine.block()

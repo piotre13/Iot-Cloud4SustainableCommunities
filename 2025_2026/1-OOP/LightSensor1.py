@@ -4,11 +4,12 @@ import time
 class LightSensor1(LightSensor):
     def __init__(self, sensor_id, room=None):
         super().__init__(sensor_id, room)
+        self.sensed = []
 
     def run(self, simulation_steps=1, frequency=1):
         for _ in range(simulation_steps):
             time.sleep(frequency)
-            self.sense()
+            self.sensed.append(self.sense()) 
         print("Simulation completed.")
 
 if __name__ == "__main__":
