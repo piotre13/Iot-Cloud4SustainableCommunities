@@ -1,0 +1,50 @@
+{
+    "project_owner": "Pietro",
+    "project_name": "IoT Cloud for Sustainable Communities",
+    "year": "2025-2026",
+    "houses":[
+        {
+            "house_id": "house_001",
+            "address": "123 Green St, Eco City",
+            "rooms": [
+                {
+                    "room_id": "living_room",
+                    "room_light_TH": 300,
+                    "sensors": [
+                        {
+                            "sensor_id": "light_sensor_01",
+                            "type": "Light",
+                            "unit": "Lux",
+                            "topic": "home/house_001/living_room/light_sensor_01"
+                        },
+                        {
+                            "sensor_id": "light_sensor_02",
+                            "type": "Light",
+                            "unit": "Lux",
+                            "topic": "home/house_001/living_room/light_sensor_02"
+                        }
+                    ],
+                    "switches": [
+                        {
+                            "switch_id": "light_switch_01",
+                            "type": "light",
+                            "state": "off",
+                            "topic": "home/house_001/living_room/light_switch_01"
+                        }
+                    ]
+                }
+            ],
+            "users": [
+                {
+                    "user_id": "user_001",
+                    "name": "Alice",
+                    "role": "admin"
+                },
+                {
+                    "user_id": "user_002",
+                    "name": "Bob",
+                    "role": "guest"
+                }
+            ]
+        }
+    ]}
