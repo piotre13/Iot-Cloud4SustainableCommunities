@@ -2,7 +2,7 @@
     "project_owner": "Pietro",
     "project_name": "IoT Cloud for Sustainable Communities",
     "year": "2025-2026",
-    "houses":[
+    "houses": [
         {
             "house_id": "house_001",
             "address": "123 Green St, Eco City",
@@ -47,4 +47,5 @@
                 }
             ]
         }
-    ]}
+    ]
+}
