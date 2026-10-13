@@ -4,6 +4,8 @@ import time
 import requests
 from MyMQTT import MQTTclient
 
+WRITE_API_KEY = "<your_write_api_key>"
+
 
 class TS_adaptor:
     def __init__(self, client_id, broker, port):
@@ -18,7 +20,7 @@ class TS_adaptor:
         data = json.loads(msg.payload)
         val = data[0]["v"]
         res = requests.get(
-            f"https://api.thingspeak.com/update?api_key=<your_write_api_key>&field1={val}"
+            f"https://api.thingspeak.com/update?api_key={WRITE_API_KEY}&field1={val}"
         )
 
 
