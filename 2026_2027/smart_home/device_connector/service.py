@@ -43,7 +43,7 @@ class DeviceConnector:
             record = senml_record(f"{self.house_id}/{self.room_id}", sensor.name, sensor.unit, sensor.sense())
             self.latest[sensor.name] = record
             self.mqtt.publish(f"{self.base_topic}/{sensor.name}", record)
-            print(f"{self.base_topic}/{sensor.name}: {record['v']} {record['u']}")
+            print(f"{self.base_topic}/{sensor.name}: {record['e'][0]['v']} {sensor.unit}")
 
     # --- commands (MQTT or REST) -> HVAC ---
     def actuate(self, command):

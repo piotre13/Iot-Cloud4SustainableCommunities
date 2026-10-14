@@ -13,6 +13,7 @@ Endpoints
   GET  /thingspeak                          PUT  /thingspeak      (body: {channel_id, fields})
 """
 import json
+import math
 import os
 import shutil
 import sys
@@ -155,10 +156,14 @@ class CatalogAPI:
                 if room is None:
                     raise cherrypy.HTTPError(404, f"Room {uri[1]}/{uri[2]} not found")
                 if not isinstance(obj, dict) or not obj or any(
-                    k not in THRESHOLD_KEYS or not isinstance(v, (int, float)) for k, v in obj.items()
+                    k not in THRESHOLD_KEYS or not isinstance(v, (int, float)) or not math.isfinite(v)
+                    for k, v in obj.items()
                 ):
-                    raise cherrypy.HTTPError(400, f"Body: numbers for any of {THRESHOLD_KEYS}")
-                room["thresholds"].update(obj)
+                    raise cherrypy.HTTPError(400, f"Body: finite numbers for any of {THRESHOLD_KEYS}")
+                new = {**room["thresholds"], **obj}
+                if new["t_min"] >= new["t_max"]:
+                    raise cherrypy.HTTPError(400, "t_min must be lower than t_max")
+                room["thresholds"] = new
                 result = room["thresholds"]
             elif uri == ("thingspeak",):
                 require(obj, "channel_id", "fields")

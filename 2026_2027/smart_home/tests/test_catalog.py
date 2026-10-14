@@ -39,6 +39,11 @@ def check():
     assert r.status_code == 200 and r.json()["t_max"] == 25 and r.json()["t_min"] == 19
     assert requests.put(f"{URL}/houses/house1/kitchen/thresholds", json={"t_max": "hot"}).status_code == 400
     assert requests.put(f"{URL}/houses/house1/kitchen/thresholds", json={"color": 1}).status_code == 400
+    nan = '{"t_min": NaN}'  # json.loads accepts NaN/Infinity: the catalog must refuse them
+    assert requests.put(f"{URL}/houses/house1/kitchen/thresholds", data=nan).status_code == 400
+    assert requests.put(f"{URL}/houses/house1/kitchen/thresholds", data='{"t_max": Infinity}').status_code == 400
+    assert requests.put(f"{URL}/houses/house1/kitchen/thresholds", json={"t_min": 30}).status_code == 400
+    assert requests.get(f"{URL}/houses/house1/kitchen/thresholds").json()["t_min"] == 19
 
     # device registration is an upsert and creates a new room with default thresholds
     dc = {"device_id": "dc_garage", "house_id": "house1", "room_id": "garage",

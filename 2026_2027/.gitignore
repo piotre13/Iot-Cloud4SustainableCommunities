@@ -1,2 +1,7 @@
 # runtime state written by the catalog service (the seed catalog.json stays clean)
 *_state.json
+logs/
+
+# working notes for the course preparation (personal, not for students)
+PROGRESS.md
+COURSE_PLAN.md

@@ -56,10 +56,19 @@ def make_sensors(source):
     return [TemperatureSensor(), HumiditySensor()]
 
 
-class HVAC:
+class Actuator:
+    def __init__(self, name):
+        self.name = name
+
+    def actuate(self, command):
+        raise NotImplementedError
+
+
+class HVAC(Actuator):
     COMMANDS = ("ON", "OFF")
 
     def __init__(self):
+        super().__init__("hvac")
         self.state = "OFF"
 
     def actuate(self, command):

@@ -36,7 +36,7 @@ def start_broker():
 
 def main():
     rec = senml_record("house1/kitchen", "temperature", "Cel", 21.4)
-    assert set(rec) == {"bn", "n", "u", "t", "v"} and rec["v"] == 21.4
+    assert set(rec) == {"bn", "bt", "e"} and rec["e"] == [{"n": "temperature", "u": "Cel", "t": 0, "v": 21.4}]
 
     with tempfile.TemporaryDirectory() as tmp:
         catalog = start_catalog(Path(tmp) / "state.json")

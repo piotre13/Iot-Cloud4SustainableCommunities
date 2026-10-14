@@ -1,0 +1,20 @@
+{
+  "broker": {"host": "localhost", "port": 1883},
+  "default_thresholds": {"t_min": 19, "t_max": 23, "h_max": 70},
+  "houses": [
+    {"house_id": "house1", "rooms": [
+      {"room_id": "kitchen", "thresholds": {"t_min": 19, "t_max": 23, "h_max": 70}},
+      {"room_id": "bedroom", "thresholds": {"t_min": 18, "t_max": 21, "h_max": 65}}
+    ]},
+    {"house_id": "house2", "rooms": [
+      {"room_id": "living_room", "thresholds": {"t_min": 20, "t_max": 24, "h_max": 70}},
+      {"room_id": "bedroom", "thresholds": {"t_min": 18, "t_max": 21, "h_max": 65}}
+    ]}
+  ],
+  "devices": [],
+  "users": [],
+  "thingspeak": {"channel_id": 0, "fields": {
+    "house1/kitchen/temperature": 1, "house1/kitchen/humidity": 2, "house1/kitchen/hvac": 3,
+    "house1/bedroom/temperature": 4, "house1/bedroom/humidity": 5, "house1/bedroom/hvac": 6
+  }}
+}

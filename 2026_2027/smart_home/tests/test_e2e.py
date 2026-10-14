@@ -16,6 +16,7 @@ from pathlib import Path
 import requests
 
 from common.mymqtt import MyMQTT
+from common.senml import senml_record
 from tests.test_catalog import PORT as CATALOG_PORT, URL as CATALOG
 from tests.test_common import MQTT_PORT, Collector, start_broker
 
@@ -72,7 +73,7 @@ def main():
             time.sleep(0.5)
 
             def send(house, room, kind, value):
-                probe.publish(f"smarthome/{house}/{room}/{kind}", {"bn": f"{house}/{room}", "n": kind, "v": value})
+                probe.publish(f"smarthome/{house}/{room}/{kind}", senml_record(f"{house}/{room}", kind, "", value))
 
             # 1. thresholds of house1/kitchen are 19..23
             send("house1", "kitchen", "temperature", 10)

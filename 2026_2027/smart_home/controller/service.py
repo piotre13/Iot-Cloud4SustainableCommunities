@@ -32,13 +32,15 @@ class Controller:
 
     def notify(self, topic, payload):
         if topic.endswith("/hvac/state"):
-            # the real HVAC state (a restarted connector, a REST command) overrides what we last sent
+            # The HVAC changed state outside our control (REST command, restart), or this is a late
+            # message about an older command: forget our last command, the next reading decides again.
             _, house, room, _, _ = topic.split("/")
-            self.last_command[(house, room)] = payload.get("state")
+            if payload.get("state") != self.last_command.get((house, room)):
+                self.last_command.pop((house, room), None)
             return
         try:
             _, house, room, kind = topic.split("/")
-            value = float(payload["v"])
+            value = float(payload["e"][0]["v"])  # SenML: first (only) entry
             thresholds = self.get_thresholds(house, room)
         except (ValueError, KeyError, TypeError, requests.RequestException) as e:
             print(f"Skipped {topic}: {e}")

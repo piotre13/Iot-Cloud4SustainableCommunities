@@ -1,0 +1,12 @@
+{
+  "houses": [
+    {"house_id": "house1", "rooms": [
+      {"room_id": "kitchen", "thresholds": {"t_min": 19, "t_max": 23, "h_max": 70}},
+      {"room_id": "bedroom", "thresholds": {"t_min": 18, "t_max": 21, "h_max": 65}}
+    ]},
+    {"house_id": "house2", "rooms": [
+      {"room_id": "living_room", "thresholds": {"t_min": 20, "t_max": 24, "h_max": 70}},
+      {"room_id": "bedroom", "thresholds": {"t_min": 18, "t_max": 21, "h_max": 65}}
+    ]}
+  ]
+}
