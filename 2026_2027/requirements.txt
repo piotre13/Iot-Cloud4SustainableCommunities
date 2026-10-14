@@ -1,0 +1,9 @@
+# Python 3.12 — install with: python3.12 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+cherrypy>=18.10
+requests>=2.31
+paho-mqtt>=2.1
+pandas>=2.2
+python-dotenv>=1.0
+pyTelegramBotAPI>=4.20
+# unmaintained since 2019, kept only for the L10 comparison with telebot
+telepot>=12.7

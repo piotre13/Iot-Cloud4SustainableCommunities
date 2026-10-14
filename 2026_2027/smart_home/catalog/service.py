@@ -1,0 +1,184 @@
+"""Home Catalog: REST service (CherryPy) backed by a JSON file.
+
+Run from smart_home/:   python -m catalog.service [port] [state_file]
+
+Endpoints
+  GET  /broker
+  GET  /houses                              POST /houses            (upsert by house_id)
+  GET  /houses/<house_id>
+  GET  /houses/<house_id>/<room_id>/thresholds
+  PUT  /houses/<house_id>/<room_id>/thresholds   (body: any of t_min, t_max, h_max)
+  GET  /devices    GET /devices/<device_id>  POST /devices      (upsert by device_id, creates house/room)
+  GET  /users                               POST /users           (upsert by chat_id)
+  GET  /thingspeak                          PUT  /thingspeak      (body: {channel_id, fields})
+"""
+import json
+import os
+import shutil
+import sys
+import threading
+from pathlib import Path
+
+import cherrypy
+
+HERE = Path(__file__).parent
+SEED_PATH = HERE / "catalog.json"
+THRESHOLD_KEYS = ("t_min", "t_max", "h_max")
+
+
+class CatalogStore:
+    """The catalog content in memory + atomic save to disk. One lock: CherryPy serves requests in threads."""
+
+    def __init__(self, path):
+        self.path = Path(path)
+        if not self.path.exists():
+            shutil.copy(SEED_PATH, self.path)  # first run: start from the clean seed
+        with open(self.path, encoding="utf-8") as f:
+            self.data = json.load(f)
+        self.lock = threading.RLock()
+
+    def save(self):
+        tmp = self.path.with_suffix(".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(self.data, f, indent=2)
+        os.replace(tmp, self.path)  # atomic: a crash never leaves half a file
+
+    def find_house(self, house_id):
+        return next((h for h in self.data["houses"] if h["house_id"] == house_id), None)
+
+    def find_room(self, house_id, room_id):
+        house = self.find_house(house_id)
+        if house is None:
+            return None
+        return next((r for r in house["rooms"] if r["room_id"] == room_id), None)
+
+    def ensure_room(self, house_id, room_id):
+        """Create house and room with the default thresholds if they are missing."""
+        house = self.find_house(house_id)
+        if house is None:
+            house = {"house_id": house_id, "rooms": []}
+            self.data["houses"].append(house)
+        room = self.find_room(house_id, room_id)
+        if room is None:
+            room = {"room_id": room_id, "thresholds": dict(self.data["default_thresholds"])}
+            house["rooms"].append(room)
+        return room
+
+
+def read_json_body():
+    try:
+        return json.loads(cherrypy.request.body.read() or b"{}")
+    except json.JSONDecodeError:
+        raise cherrypy.HTTPError(400, "Invalid JSON")
+
+
+def require(obj, *keys):
+    if not isinstance(obj, dict):
+        raise cherrypy.HTTPError(400, "Body must be a JSON object")
+    missing = [k for k in keys if k not in obj]
+    if missing:
+        raise cherrypy.HTTPError(400, f"Missing keys: {missing}")
+
+
+def upsert(items, obj, key):
+    for i, item in enumerate(items):
+        if item[key] == obj[key]:
+            items[i] = obj
+            return
+    items.append(obj)
+
+
+class CatalogAPI:
+    exposed = True
+
+    def __init__(self, store):
+        self.store = store
+
+    # shortcut: json_out serializes after the lock is released; a concurrent write could race. Fine for a classroom demo.
+    @cherrypy.tools.json_out()
+    def GET(self, *uri):
+        data = self.store.data
+        with self.store.lock:
+            if uri == ("broker",):
+                return data["broker"]
+            if uri == ("houses",):
+                return data["houses"]
+            if len(uri) == 2 and uri[0] == "houses":
+                house = self.store.find_house(uri[1])
+                if house is None:
+                    raise cherrypy.HTTPError(404, f"House {uri[1]} not found")
+                return house
+            if len(uri) == 4 and uri[0] == "houses" and uri[3] == "thresholds":
+                room = self.store.find_room(uri[1], uri[2])
+                if room is None:
+                    raise cherrypy.HTTPError(404, f"Room {uri[1]}/{uri[2]} not found")
+                return room["thresholds"]
+            if uri == ("devices",):
+                return data["devices"]
+            if len(uri) == 2 and uri[0] == "devices":
+                device = next((d for d in data["devices"] if d["device_id"] == uri[1]), None)
+                if device is None:
+                    raise cherrypy.HTTPError(404, f"Device {uri[1]} not found")
+                return device
+            if uri == ("users",):
+                return data["users"]
+            if uri == ("thingspeak",):
+                return data["thingspeak"]
+        raise cherrypy.HTTPError(404, "Unknown endpoint")
+
+    @cherrypy.tools.json_out()
+    def POST(self, *uri):
+        obj = read_json_body()
+        with self.store.lock:
+            if uri == ("houses",):
+                require(obj, "house_id", "rooms")
+                upsert(self.store.data["houses"], obj, "house_id")
+            elif uri == ("devices",):
+                require(obj, "device_id", "house_id", "room_id", "rest_url", "sensors")
+                upsert(self.store.data["devices"], obj, "device_id")
+                self.store.ensure_room(obj["house_id"], obj["room_id"])
+            elif uri == ("users",):
+                require(obj, "chat_id", "name", "houses")
+                upsert(self.store.data["users"], obj, "chat_id")
+            else:
+                raise cherrypy.HTTPError(404, "Unknown endpoint")
+            self.store.save()
+        cherrypy.response.status = 201
+        return obj
+
+    @cherrypy.tools.json_out()
+    def PUT(self, *uri):
+        obj = read_json_body()
+        with self.store.lock:
+            if len(uri) == 4 and uri[0] == "houses" and uri[3] == "thresholds":
+                room = self.store.find_room(uri[1], uri[2])
+                if room is None:
+                    raise cherrypy.HTTPError(404, f"Room {uri[1]}/{uri[2]} not found")
+                if not isinstance(obj, dict) or not obj or any(
+                    k not in THRESHOLD_KEYS or not isinstance(v, (int, float)) for k, v in obj.items()
+                ):
+                    raise cherrypy.HTTPError(400, f"Body: numbers for any of {THRESHOLD_KEYS}")
+                room["thresholds"].update(obj)
+                result = room["thresholds"]
+            elif uri == ("thingspeak",):
+                require(obj, "channel_id", "fields")
+                self.store.data["thingspeak"] = obj
+                result = obj
+            else:
+                raise cherrypy.HTTPError(404, "Unknown endpoint")
+            self.store.save()
+        return result
+
+
+def main():
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
+    state_path = sys.argv[2] if len(sys.argv) > 2 else HERE / "catalog_state.json"
+    conf = {"/": {"request.dispatch": cherrypy.dispatch.MethodDispatcher()}}
+    cherrypy.config.update({"server.socket_host": "0.0.0.0", "server.socket_port": port})
+    cherrypy.tree.mount(CatalogAPI(CatalogStore(state_path)), "/", conf)
+    cherrypy.engine.start()
+    cherrypy.engine.block()
+
+
+if __name__ == "__main__":
+    main()
