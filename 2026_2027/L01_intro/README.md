@@ -17,14 +17,6 @@ It is made of small independent **microservices**: a catalog, device connectors,
 a controller, a ThingSpeak adaptor and a Telegram bot. They talk to each other
 only through **REST** and **MQTT**.
 
-Roadmap:
-- L02-L03 OOP
-- L04-L06 REST + catalog
-- L07-L08 MQTT
-- L09 ThingSpeak
-- L10-L11 Telegram
-- L12 integration
-- L13 revision
 
 ## Environment setup
 Python 3.12 is required. From the folder `2026_2027/`:

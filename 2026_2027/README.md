@@ -1,22 +1,13 @@
 # Programming for IoT — course material 2026/27
 
 One project, built lesson by lesson: a **smart home** with temperature/humidity sensors and an ON/OFF HVAC (heater)
-in every room, scalable to many houses. Every lesson adds a module that stays in the final project, following the
-exam rules: microservices, object-oriented code, JSON configuration, communication only over REST and MQTT,
+in every room, scalable to many houses. Every lesson adds a module that creates a sample of the final project (simplified!!- put some creativity and effort when it is your turn)
+All the components and requirements follows the exam rules: microservices, object-oriented code, JSON configuration, communication only over REST and MQTT,
 devices and houses added at runtime without changing the code.
 
-```
-                  Catalog (REST, CherryPy + JSON file)
-        houses · rooms · thresholds · devices · users · broker address
-          ▲ register        ▲ thresholds      ▲ field map       ▲ thresholds, users
-          │                 │                 │                 │
-   Device Connector     Controller     ThingSpeak Adaptor    Telegram Bot
-   (1 per room)       (1 for all houses)  (→ ThingSpeak REST)  (→ Telegram API)
-   pub T/H, state       sub T/H            sub T/H, state       sub alerts
-   sub HVAC command     pub command, alerts
-          │                 │                 │                 │
-          └──────────── MQTT broker (mosquitto, local) ─────────┘
-```
+
+![sample schema](sample_project_schema.png)
+
 
 ## Setup
 
@@ -27,8 +18,14 @@ source .venv/bin/activate          # Windows (PowerShell): .venv\Scripts\Activat
 pip install -r requirements.txt
 cp .env.example .env               # put your own keys here; .env is never committed
 ```
-You also need a local MQTT broker: [mosquitto](https://mosquitto.org/download/) (`brew install mosquitto` on macOS,
-then run `mosquitto -v`; on Apple Silicon the binary is in `/opt/homebrew/sbin`).
+You also need a local MQTT broker: [mosquitto](https://mosquitto.org/download/).
+
+- **macOS**: `brew install mosquitto`, then run `mosquitto -v` (on Apple Silicon the binary is in `/opt/homebrew/sbin`).
+- **Windows**: download and run the 64-bit installer from the download page, then in PowerShell:
+  `& "C:\Program Files\mosquitto\mosquitto.exe" -v` (or add `C:\Program Files\mosquitto` to `PATH` and run
+  `mosquitto -v`). Allow it through the firewall if prompted. The installer also registers a `mosquitto` Windows
+  service; if port 1883 is already in use, the service is running — stop it with `net stop mosquitto` (admin) or just
+  use it.
 
 ## Lessons
 
@@ -79,4 +76,3 @@ Catalog endpoints: `GET /broker` · `GET|POST /houses` · `GET /houses/<house>` 
 Tokens and API keys live only in `2026_2027/.env` (see `.env.example`). Never commit them, never paste them in code.
 If a key ends up in a commit, revoke it (BotFather `/revoke`, ThingSpeak "Generate New Write API Key").
 
-The 2025/26 material in `../2025_2026/` is kept unchanged as an archive.
