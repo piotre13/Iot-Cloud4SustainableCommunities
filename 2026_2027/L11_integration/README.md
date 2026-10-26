@@ -1,4 +1,4 @@
-# L12 - Integration (3 h)
+# L11 - Integration (3 h)
 
 Goal: run the whole smart home (`smart_home/`), understand how the services fit together, extend it at runtime
 without touching code, and map the exam-project requirements onto this reference code.
@@ -100,7 +100,7 @@ Run the system (2 houses x 2 rooms) and follow one temperature reading through a
 3. `logs/controller.log`: the controller read the thresholds from the catalog and (if the value crossed one) sent `hvac ON/OFF`.
 4. The connector executes the command and publishes `.../hvac/state`: find it in the `mosquitto_sub` window.
 5. `logs/thingspeak_adaptor.log`: the `[dry run] GET .../update {'field1': ...}` line containing that value (`field3` is the HVAC of house1/kitchen, 1 = ON).
-6. `curl http://localhost:8081/` asks the connector's REST API for its latest measurements and HVAC state.
+6. Switch the HVAC by hand: `mosquitto_pub -t smarthome/house1/kitchen/hvac -m '{"command": "OFF"}'`: the connector publishes the new `hvac/state`, the controller sees it and (if the room is still too cold) switches it ON again.
 
 Question: which of these steps use REST and which use MQTT? Why?
 
@@ -108,10 +108,10 @@ Question: which of these steps use REST and which use MQTT? Why?
 Without touching any code or restarting anything, add `house3` with two rooms to the running system:
 
 ```
-cd L12_integration/solution      # (or starter, once completed)
-python add_house.py house3 kitchen bedroom --first-port 8085
+cd L11_integration/solution      # (or starter, once completed)
+python add_house.py house3 kitchen bedroom
 ```
-(this is the same as launching `python -m device_connector.service house3 kitchen 8085` and `... house3 bedroom 8086` by hand from `smart_home/`).
+(this is the same as launching `python -m device_connector.service house3 kitchen` and `... house3 bedroom` by hand from `smart_home/`).
 Check:
 - `curl http://localhost:8080/houses` and `/devices`: the house, the rooms (with default thresholds) and the devices exist.
 - `logs/controller.log` shows lines for `house3/...`: the wildcard subscriptions and the catalog made it work with no change.
@@ -122,7 +122,7 @@ Ctrl+C in the `add_house.py` terminal stops the new connectors.
 
 ### Ex3 - Change thresholds from the catalog
 ```
-cd L12_integration/solution
+cd L11_integration/solution
 python change_threshold.py house1 kitchen t_min 21.5
 ```
 or with curl:

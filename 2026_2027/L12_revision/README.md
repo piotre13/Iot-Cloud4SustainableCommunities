@@ -1,4 +1,4 @@
-# L13 - Revision and exam practice (1.5 h)
+# L12 - Revision and exam practice (1.5 h)
 
 ## Goals
 - See the whole course as one map (OOP, REST, catalog, MQTT, ThingSpeak, Telegram, integration).
@@ -10,11 +10,11 @@
 |---|---|---|
 | OOP | classes, inheritance (also multi-level), polymorphism, composition (a room "has" sensors and an HVAC) | L02, L03 |
 | REST | resources and URLs, GET/POST/PUT/DELETE, status codes, JSON, CherryPy `MethodDispatcher` with `exposed = True` | L04, L05 |
-| Catalog | a JSON registry exposed over REST; service discovery: clients ask the catalog instead of hard-coding addresses | L06 |
-| MQTT | broker, topics and wildcards (`+`, `#`), QoS 0/1/2, retained, clean session, SenML payloads | L07, L08 |
-| ThingSpeak | channel, write API key (kept in `.env`), 15 s limit between updates, MQTT-to-REST adaptor | L09 |
-| Telegram | BotFather, token in `.env`, commands, inline keyboards, notifications | L10, L11 |
-| Integration | all services together, a house added at runtime, microservices vs monolith | L12 |
+| Catalog | a JSON registry exposed over REST; service discovery: clients ask the catalog instead of hard-coding addresses | L05 |
+| MQTT | broker, topics and wildcards (`+`, `#`), QoS 0/1/2, retained, clean session, SenML payloads | L06, L07 |
+| ThingSpeak | channel, write API key (kept in `.env`), 15 s limit between updates, MQTT-to-REST adaptor | L08 |
+| Telegram | BotFather, token in `.env`, commands, inline keyboards, notifications | L09, L10 |
+| Integration | all services together, a house added at runtime, microservices vs monolith | L11 |
 
 ## Exam format (written)
 | Part | Count | Scoring |

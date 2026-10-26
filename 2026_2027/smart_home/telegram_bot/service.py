@@ -7,6 +7,7 @@ Needs TELEGRAM_TOKEN in 2026_2027/.env (create the bot with @BotFather).
 /start   choose the houses you follow (saved in the catalog: POST /users)
 /houses  house -> room -> latest measurements, HVAC state, thresholds -> buttons to change them
 Alerts from smarthome/+/alerts go to the users who follow that house.
+The latest measurements and HVAC state come from MQTT: the bot keeps the last value of every room in memory.
 """
 import argparse
 import sys
@@ -36,6 +37,7 @@ class SmartHomeBot:
         self.catalog = catalog
         self.waiting_value = {}  # chat_id -> (house, room, key) while we wait for a number
         self.mqtt = None
+        self.latest = {}  # (house, room) -> {"temperature": record, "humidity": record, "hvac": "ON"}
         bot.register_message_handler(self.on_start, commands=["start"])
         bot.register_message_handler(self.on_houses, commands=["houses"])
         bot.register_message_handler(self.on_text, content_types=["text"])
@@ -117,20 +119,30 @@ class SmartHomeBot:
     def show_room(self, chat_id, house, room):
         thresholds = self.get(f"/houses/{house}/{room}/thresholds")
         lines = [f"{house}/{room}"]
-        try:
-            device = self.get(f"/devices/dc_{house}_{room}")
-            status = requests.get(f"{device['rest_url']}/", timeout=3).json()
-            lines += [f"{m['e'][0]['n']}: {m['e'][0]['v']} {m['e'][0]['u']}" for m in status["measurements"]]
-            lines.append(f"HVAC: {status['hvac']}")
-        except requests.RequestException:  # no connector registered for the room, or not running
-            lines.append("device connector offline")
+        data = self.latest.get((house, room))
+        if data is None:
+            lines.append("no data yet (a device connector must be running: values arrive every few seconds)")
+        else:
+            for name in ("temperature", "humidity"):
+                if name in data:
+                    e = data[name]["e"][0]
+                    lines.append(f"{name}: {e['v']} {e['u']} ({time.time() - data[name]['bt']:.0f} s ago)")
+            lines.append(f"HVAC: {data.get('hvac', 'unknown')}")
         lines.append("thresholds: " + ", ".join(f"{k} {v}" for k, v in thresholds.items()))
         self.bot.send_message(chat_id, "\n".join(lines), reply_markup=keyboard(
             [(f"change {k}", f"set:{house}:{room}:{k}") for k in THRESHOLD_KEYS]))
 
-    # --- MQTT alerts ---
+    # --- MQTT: alerts are forwarded, measurements and HVAC state are remembered ---
     def notify(self, topic, payload):
-        house = topic.split("/")[1]
+        parts = topic.split("/")  # smarthome/<house>/alerts  or  smarthome/<house>/<room>/<what>[/state]
+        if parts[2] == "alerts":
+            self.forward_alert(parts[1], payload)
+        elif parts[-1] == "state":
+            self.latest.setdefault((parts[1], parts[2]), {})["hvac"] = payload["state"]
+        else:
+            self.latest.setdefault((parts[1], parts[2]), {})[parts[3]] = payload
+
+    def forward_alert(self, house, payload):
         text = f"ALERT {house}/{payload['room']}: {payload['msg']}"
         for user in self.get("/users"):
             if house in user["houses"]:
@@ -154,7 +166,9 @@ def main():
     broker = get_broker(catalog)
     app.mqtt = MyMQTT("telegram_bot", broker["host"], broker["port"], notifier=app)
     app.mqtt.start()
-    app.mqtt.subscribe("smarthome/+/alerts")
+    for topic in ("smarthome/+/alerts", "smarthome/+/+/temperature", "smarthome/+/+/humidity",
+                  "smarthome/+/+/hvac/state"):
+        app.mqtt.subscribe(topic)
     print("Bot running, Ctrl+C to stop")
     try:
         app.bot.infinity_polling()

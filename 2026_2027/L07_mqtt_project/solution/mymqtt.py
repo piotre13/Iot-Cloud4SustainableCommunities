@@ -48,8 +48,9 @@ class MyMQTT:
         self.client.loop_stop()
         self.client.disconnect()
 
-    def publish(self, topic, payload, qos=1):
-        self.client.publish(topic, json.dumps(payload), qos=qos)
+    def publish(self, topic, payload, qos=1, retain=False):
+        """retain=True: the broker keeps the last message and gives it to every new subscriber (use it for *state*)."""
+        self.client.publish(topic, json.dumps(payload), qos=qos, retain=retain)
 
     def subscribe(self, topic, qos=1):
         self.topics.add(topic)

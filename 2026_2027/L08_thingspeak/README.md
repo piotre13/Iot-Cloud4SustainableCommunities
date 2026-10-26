@@ -1,4 +1,4 @@
-# L09 - ThingSpeak, a third-party REST API (1.5 h)
+# L08 - ThingSpeak, a third-party REST API (1.5 h)
 
 ## Goals
 - Use a REST API we do not control (ThingSpeak) with `requests`.
@@ -26,7 +26,7 @@
 3. Tab *API Keys*: copy the *Write API Key* into your `.env`.
 
 ## Files
-`config.py` (catalog URL from `settings.json`, `get_broker`, `get_secret`), `mymqtt.py` (as in L07/L08), `senml.py` (solution only, used by the offline test),
+`config.py` (catalog URL from `settings.json`, `get_broker`, `get_secret`), `mymqtt.py` (as in L06/L07), `senml.py` (solution only, used by the offline test),
 `settings.json`, `ex1_write.py`, `thingspeak_adaptor.py`, `check_adaptor.py` (solution only: offline test).
 Work in `starter/`, compare with `solution/`. Run everything from inside the folder.
 
@@ -42,10 +42,10 @@ Complete `notify` and `upload`:
 - `notify(topic, payload)`: build the key `house/room/kind` from the topic (HVAC state topic -> `house/room/hvac`, value 1 for ON, 0 for OFF), look up the field number in `self.fields` (from the catalog `GET /thingspeak`), keep only the latest value in `self.pending`. Unmapped rooms are ignored.
 - `upload()`: send all pending values in ONE update; no key -> print `[dry run] ...`; if the answer is `0` or the request fails, put the values back in `self.pending`.
 
-The adaptor needs the L08 system. Terminals (from the repo folder `2026_2027/`):
+The adaptor needs the L07 system. Terminals (from the repo folder `2026_2027/`):
 1. `mosquitto` (broker on 1883)
-2. L08 solution: catalog + connectors + controller (or `cd smart_home && python launch_all.py`)
-3. `cd L09_thingspeak/starter` then `python thingspeak_adaptor.py --dry-run` (add `--catalog URL` if the catalog is not on port 8080)
+2. L07 solution: catalog + connectors + controller (or `cd smart_home && python launch_all.py`)
+3. `cd L08_thingspeak/starter` then `python thingspeak_adaptor.py --dry-run` (add `--catalog URL` if the catalog is not on port 8080)
 
 After at most 15 s you see: `[dry run] GET https://api.thingspeak.com/update {'field1': 21.5, 'field3': 1}`.
 Offline test of the logic (solution folder): `python check_adaptor.py`.

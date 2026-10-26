@@ -10,6 +10,8 @@ Default: port 8080, state file catalog_state.json (copied from the seed catalog.
   GET  /houses/<house_id>/<room_id>/thresholds
   PUT  /houses/<house_id>/<room_id>/thresholds   (body: any of t_min, t_max, h_max)
   GET  /devices    GET /devices/<device_id>  POST /devices      (upsert by device_id, creates house/room)
+                                            answer to the POST: {"device", "broker", "base_topic", "interval"},
+                                            all that the device needs to start (the device registers first)
   GET  /users                               POST /users           (upsert by chat_id)
   GET  /thingspeak                          PUT  /thingspeak      (body: {channel_id, fields})
 """
@@ -107,9 +109,15 @@ class CatalogAPI:
     def GET(self, *uri):
         raise NotImplementedError("TODO Ex1: answer every GET endpoint listed in the module docstring (data, 404 if not found), inside the lock")
 
+    def device_config(self, device):
+        """What a device needs to work, sent back when it registers: broker, its MQTT base topic, publish interval."""
+        return {"device": device, "broker": self.store.data["broker"],
+                "base_topic": f"smarthome/{device['house_id']}/{device['room_id']}",
+                "interval": self.store.data.get("default_interval", 10)}
+
     @cherrypy.tools.json_out()
     def POST(self, *uri):
-        raise NotImplementedError("TODO Ex2: houses/devices/users: require() the keys, upsert(), ensure_room() for devices, save(), status 201")
+        raise NotImplementedError("TODO Ex2: houses/devices/users: require() the keys, upsert(), ensure_room() for devices, save(), status 201; answer with the object, for devices with self.device_config(obj)")
 
     @cherrypy.tools.json_out()
     def PUT(self, *uri):

@@ -1,6 +1,6 @@
 """Add a whole house at runtime: one device connector (a separate process) per room.
 
-    python add_house.py house3 kitchen bedroom --first-port 8085
+    python add_house.py house3 kitchen bedroom
 
 No code of smart_home is touched: each connector registers itself in the catalog (POST /devices),
 which creates the house and the rooms. Ctrl+C stops all the connectors.
@@ -16,13 +16,12 @@ SMART_HOME = Path(__file__).resolve().parent.parent.parent / "smart_home"
 parser = argparse.ArgumentParser(description="Start one device connector per room of a new house")
 parser.add_argument("house_id")
 parser.add_argument("rooms", nargs="+", help="room names")
-parser.add_argument("--first-port", type=int, default=8085, help="REST port of the first room, then +1 each")
 parser.add_argument("--interval", type=float, default=10, help="seconds between measurements")
 args = parser.parse_args()
 
 procs = []
-# TODO Ex2: for each room start `python -u -m device_connector.service <house> <room> <port> --interval <n>`
-# with subprocess.Popen (cwd=SMART_HOME, port = first_port + index) and append the process to procs
+# TODO Ex2: for each room start `python -u -m device_connector.service <house> <room> --interval <n>`
+# with subprocess.Popen (cwd=SMART_HOME) and append the process to procs
 raise NotImplementedError("TODO Ex2: start one device connector per room")
 
 try:

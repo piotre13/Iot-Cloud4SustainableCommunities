@@ -1,6 +1,7 @@
 {
   "broker": {"host": "localhost", "port": 1883},
   "default_thresholds": {"t_min": 19, "t_max": 23, "h_max": 70},
+  "default_interval": 10,
   "houses": [
     {"house_id": "house1", "rooms": [
       {"room_id": "kitchen", "thresholds": {"t_min": 19, "t_max": 23, "h_max": 70}},

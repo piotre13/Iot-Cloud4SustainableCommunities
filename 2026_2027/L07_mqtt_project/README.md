@@ -1,4 +1,4 @@
-# L08 - MQTT in the project
+# L07 - MQTT in the project
 
 ## Goals
 - Put MQTT inside the real project: the device connector publishes and listens, a controller reacts.
@@ -10,7 +10,8 @@ The **catalog** (REST) is used for *discovery*: where is the broker, which are t
 which devices exist. The **data** (measurements, commands, alerts) travels over **MQTT**.
 
 ```
- device_connector --REST POST /devices--> catalog <--GET /broker, /thresholds-- controller
+ device_connector --POST /devices--> catalog <--GET /broker, /thresholds-- controller
+        ^---- answer: broker, base_topic, interval
         |  pub smarthome/<house>/<room>/temperature|humidity (SenML)                 ^
         |  pub smarthome/<house>/<room>/hvac/state                                   |
         +---------------------------- mosquitto ------------------------------------+
@@ -23,13 +24,13 @@ Topics (same as the final project):
 |---|---|
 | `smarthome/{house}/{room}/temperature`, `.../humidity` | SenML `{"bn","bt","e":[{"n","u","t","v"}]}` |
 | `smarthome/{house}/{room}/hvac` | `{"command": "ON"}` or `{"command": "OFF"}` |
-| `smarthome/{house}/{room}/hvac/state` | `{"state": "ON"}` |
+| `smarthome/{house}/{room}/hvac/state` | `{"state": "ON"}` — **retained**: it is a *state*, a late subscriber (the Telegram bot in L10) must get it at once. Measurements and commands are never retained |
 | `smarthome/{house}/alerts` | `{"room": "kitchen", "msg": "..."}` |
 
 Controller rules: temperature below `t_min` -> HVAC ON; above `t_max` -> HVAC OFF; humidity above `h_max` -> alert.
 Commands and alerts are sent **only when the situation changes** (not at every measurement), and the
 thresholds are read from the catalog **at every message**, so a change is used immediately.
-The controller also listens to `hvac/state`, so it knows the real state (e.g. after a manual REST command).
+The controller also listens to `hvac/state`, so it knows the real state (e.g. after a manual command sent with `mosquitto_pub`).
 
 The complete project (ThingSpeak adaptor, Telegram bot, launcher) is in `smart_home/`; we add those in later lessons.
 
@@ -45,15 +46,13 @@ Install the requirements once: `pip install -r ../../requirements.txt` (or use t
 2. Catalog: `python catalog.py` (port 8080)
 3. Controller: `python controller.py`
 4. Connectors:
-   - `python device_connector.py house1 kitchen 8081`
-   - `python device_connector.py house1 bedroom 8082`
-   - `python device_connector.py house2 bedroom 8083 --interval 5`
+   - `python device_connector.py house1 kitchen`
+   - `python device_connector.py house1 bedroom`
+   - `python device_connector.py house2 bedroom --interval 5`
 
 Options: `--source random|csv` (csv replays `../../data/meteo_frassinetto.csv`), `--interval SECONDS`, `--catalog URL`.
 
 **Watch everything** in one more terminal: `mosquitto_sub -t 'smarthome/#' -v`
-
-Note: in the starter, the connector stays alive after the TODO error (the web server thread keeps running): press Ctrl+C.
 
 Automatic check of the whole solution (teacher tool, own broker on port 1886): `python test_e2e.py` in `solution/`
 (needs `/opt/homebrew/sbin/mosquitto`; edit the path if your mosquitto lives elsewhere).
@@ -61,12 +60,11 @@ Automatic check of the whole solution (teacher tool, own broker on port 1886): `
 ## Exercises
 
 ### Ex1 - Device connector v3 (`device_connector.py`)
-Add MQTT to the connector from L05. Complete the TODOs:
+Add MQTT to the connector (in L05 it only registered itself in the catalog). Complete the TODOs:
 1. `publish_measurements`: publish every SenML record on `smarthome/<house>/<room>/<sensor>`.
-2. `actuate`: after the HVAC changes, publish `{"state": ...}` on `.../hvac/state`.
+2. `publish_state` / `actuate`: publish `{"state": ...}` on `.../hvac/state` with `retain=True`, at start-up and after every HVAC change.
 3. `notify`: receives the messages on `.../hvac`; apply `payload["command"]` and ignore bad payloads.
-4. `main`: ask the catalog for the broker, create and start `MyMQTT`, subscribe to the hvac topic,
-   and register the device in the catalog (`POST /devices`) so the catalog knows the room.
+4. `main`: `register` (given, as in L05) is the first call: its answer from the catalog contains the broker, the base topic and the interval. Create and start `MyMQTT` with that broker, subscribe to the hvac topic and call `publish_state()`. The device never calls `GET /broker`: registering is enough.
 
 ### Ex2 - Controller as a service (`controller.py`)
 Complete `notify`, `check_temperature`, `check_humidity`:
@@ -77,7 +75,7 @@ Complete `notify`, `check_temperature`, `check_humidity`:
 
 ### Ex3 - Add a room at runtime, change a threshold
 With everything running (kitchen, bedroom, controller), do NOT restart anything:
-1. Launch one more connector: `python device_connector.py house1 garage 8084`.
+1. Launch one more connector: `python device_connector.py house1 garage`.
    Check `curl localhost:8080/houses/house1/garage/thresholds`: the catalog created the room with the default thresholds.
    Watch the controller handle it with `mosquitto_sub -t 'smarthome/#' -v`.
 2. Change a threshold:

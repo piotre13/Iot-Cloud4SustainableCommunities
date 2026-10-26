@@ -26,4 +26,4 @@ print("t_min=40:", response.status_code)
 
 # 5. list the registered devices
 for device in requests.get(f"{catalog}/devices", timeout=5).json():
-    print(device["device_id"], device["rest_url"], device["sensors"])
+    print(device["device_id"], device["sensors"])

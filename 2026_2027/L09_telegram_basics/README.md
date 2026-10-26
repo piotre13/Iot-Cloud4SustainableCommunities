@@ -1,4 +1,4 @@
-# L10 - Telegram bots, basics (1.5 h)
+# L09 - Telegram bots, basics (1.5 h)
 
 ## Goals
 - Create a Telegram bot with @BotFather and keep its token secret.
@@ -53,7 +53,7 @@ Write `on_start` (welcome with the user's first name), `on_help` (list of comman
 ### Ex2 - inline keyboard
 - `/hvac` shows a message with two buttons **ON** and **OFF** (`callback_data` `hvac:ON` / `hvac:OFF`).
 - `on_button` answers the callback query and replies `HVAC switched ON (simulated)`.
-- `/temp` replies with a random temperature (no connection to the project yet: in L11 the bot talks to the catalog).
+- `/temp` replies with a random temperature (no connection to the project yet: in L10 the bot talks to the catalog).
 
 ### Reference - `telepot_reference.py`
 Read it next to `bot_basics.py` and find, line by line, what changes. Do not run it.

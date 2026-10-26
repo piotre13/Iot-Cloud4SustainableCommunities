@@ -1,6 +1,6 @@
 # L04 - REST basics: `requests` client and CherryPy server (3 h)
 
-Module produced: **CherryPy base**. The same patterns are reused in L05 (device connector REST) and L06 (catalog).
+Module produced: **CherryPy base**. The same patterns are reused in L05 (catalog).
 
 ## Goals
 - Understand HTTP and REST (resources, URIs, methods, status codes).

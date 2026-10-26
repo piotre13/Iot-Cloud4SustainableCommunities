@@ -32,7 +32,7 @@ class Controller:
 
     def notify(self, topic, payload):
         if topic.endswith("/hvac/state"):
-            # The HVAC changed state outside our control (REST command, restart), or this is a late
+            # The HVAC changed state outside our control (manual command, restart), or this is a late
             # message about an older command: forget our last command, the next reading decides again.
             _, house, room, _, _ = topic.split("/")
             if payload.get("state") != self.last_command.get((house, room)):

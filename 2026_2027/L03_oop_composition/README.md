@@ -8,7 +8,7 @@
 ## Theory in 5 minutes
 - **Inheritance, is-a**: `TemperatureSensor` is a `Sensor` (last lesson, `devices.py`).
 - **Composition, has-a**: a `DeviceConnector` has sensors and has an HVAC. We pass them to the constructor and keep them as attributes. The connector does not care which kind of sensor it gets (random, CSV, ...): it only calls `sense()`.
-- **Separation of duties**: the connector reads and acts, the controller decides. Neither knows the other; `main` passes the data between them. This is what lets us replace the pieces later (REST in L05, MQTT in L08, thresholds from the catalog in L08).
+- **Separation of duties**: the connector reads and acts, the controller decides. Neither knows the other; `main` passes the data between them. This is what lets us replace the pieces later (MQTT in L07, thresholds from the catalog in L07).
 - **Config instead of code**: `config.json` lists houses, rooms and thresholds. **Adding a room = editing `config.json`, no code change.** (Exam requirement.)
 
 ## Files

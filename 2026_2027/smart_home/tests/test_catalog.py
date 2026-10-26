@@ -47,11 +47,15 @@ def check():
 
     # device registration is an upsert and creates a new room with default thresholds
     dc = {"device_id": "dc_garage", "house_id": "house1", "room_id": "garage",
-          "rest_url": "http://localhost:8090", "sensors": ["temperature", "humidity"]}
-    assert requests.post(f"{URL}/devices", json=dc).status_code == 201
-    assert requests.post(f"{URL}/devices", json={**dc, "rest_url": "http://localhost:8091"}).status_code == 201
+          "sensors": ["temperature"]}
+    r = requests.post(f"{URL}/devices", json=dc)
+    assert r.status_code == 201
+    # the answer is the configuration of the device: broker, base topic, default publish interval
+    assert r.json() == {"device": dc, "broker": {"host": "localhost", "port": 1883},
+                        "base_topic": "smarthome/house1/garage", "interval": 10}, r.json()
+    assert requests.post(f"{URL}/devices", json={**dc, "sensors": ["temperature", "humidity"]}).status_code == 201
     devices = requests.get(f"{URL}/devices").json()
-    assert len(devices) == 1 and devices[0]["rest_url"] == "http://localhost:8091"
+    assert len(devices) == 1 and devices[0]["sensors"] == ["temperature", "humidity"]
     assert requests.get(f"{URL}/devices/dc_garage").json()["room_id"] == "garage"
     assert requests.get(f"{URL}/houses/house1/garage/thresholds").json() == {"t_min": 19, "t_max": 23, "h_max": 70}
     # a brand new house too

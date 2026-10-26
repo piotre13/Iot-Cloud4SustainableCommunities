@@ -82,10 +82,14 @@ def main():
     assert out.last()[2] == ["room:house1:kitchen", "room:house1:bedroom"]
     feed(button_update(ADA, "Ada", "room:house1:kitchen"))
     chat, text, buttons = out.last()
-    assert "temperature:" in text and "HVAC:" in text and "t_min" in text, text
+    assert "no data yet" in text and "t_min" in text, text  # nothing received over MQTT so far
     assert buttons == ["set:house1:kitchen:t_min", "set:house1:kitchen:t_max", "set:house1:kitchen:h_max"]
-    feed(button_update(ADA, "Ada", "room:house1:bedroom"))
-    assert "device connector offline" in out.last()[1]
+    app.latest[("house1", "kitchen")] = {"temperature": {"bn": "x", "bt": time.time(), "e": [{"n": "temperature", "u": "Cel", "t": 0, "v": 21.4}]},
+                                         "hvac": "ON"}  # what notify (Ex4) stores
+    feed(button_update(ADA, "Ada", "room:house1:kitchen"))
+    text = out.last()[1]
+    assert "temperature: 21.4 Cel" in text and "HVAC: ON" in text and "t_min" in text, text
+    app.latest.clear()
     print("Ex2 ok")
 
     # Ex3: button, then the value as a plain message
@@ -128,6 +132,16 @@ def main():
     time.sleep(0.5)
     app.mqtt.stop()
     assert out.sent == [(ADA, "ALERT house1/kitchen: humidity 80% > 70%", [])], out.sent
+
+    # measurements and HVAC state are remembered, per room
+    app.notify("smarthome/house1/kitchen/temperature", {"bn": "x", "bt": time.time(), "e": [{"n": "temperature", "u": "Cel", "t": 0, "v": 18.5}]})
+    app.notify("smarthome/house1/kitchen/hvac/state", {"state": "OFF"})
+    out.sent.clear()
+    feed(button_update(ADA, "Ada", "room:house1:kitchen"))
+    text = out.last()[1]
+    assert "temperature: 18.5 Cel" in text and "HVAC: OFF" in text, text
+    feed(button_update(ADA, "Ada", "room:house1:bedroom"))
+    assert "no data yet" in out.last()[1]  # another room: untouched
     print("Ex4 ok")
     print("bot: all checks passed")
 

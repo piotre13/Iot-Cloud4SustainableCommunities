@@ -1,4 +1,4 @@
-# L07 - MQTT basics (3 h)
+# L06 - MQTT basics (3 h)
 
 ## Goals
 - Understand publish/subscribe and how it differs from request/response (REST).

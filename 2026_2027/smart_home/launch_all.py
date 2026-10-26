@@ -5,7 +5,7 @@ Run from smart_home/ (mosquitto must already be running on the broker in catalog
 
 Each service writes its output to logs/<service>.log  (follow one with: tail -f logs/controller.log).
 Ctrl+C stops everything. To add a room at runtime, from another terminal:
-    python -m device_connector.service house2 kitchen 8085
+    python -m device_connector.service house2 kitchen
 """
 import signal
 import subprocess
@@ -21,11 +21,11 @@ from common.config import catalog_url, get_secret
 HERE = Path(__file__).parent
 LOGS = HERE / "logs"
 
-ROOMS = [  # house, room, REST port of its connector
-    ("house1", "kitchen", 8081),
-    ("house1", "bedroom", 8082),
-    ("house2", "living_room", 8083),
-    ("house2", "bedroom", 8084),
+ROOMS = [  # house, room of each connector
+    ("house1", "kitchen"),
+    ("house1", "bedroom"),
+    ("house2", "living_room"),
+    ("house2", "bedroom"),
 ]
 
 
@@ -75,8 +75,8 @@ def main():
             procs.append(start("telegram_bot", "telegram_bot.service"))
         else:
             print("TELEGRAM_TOKEN missing in .env: bot not started")
-        for house, room, rest_port in ROOMS:
-            procs.append(start(f"dc_{house}_{room}", "device_connector.service", house, room, str(rest_port)))
+        for house, room in ROOMS:
+            procs.append(start(f"dc_{house}_{room}", "device_connector.service", house, room))
         print("all running, Ctrl+C to stop")
         while True:
             time.sleep(1)

@@ -38,15 +38,14 @@ TODO raises `NotImplementedError`) and a `solution/` (complete, run it from insi
 | [L02](L02_oop_basics/) | OOP 1: classes, inheritance, polymorphism | `devices.py` (sensors, HVAC) |
 | [L03](L03_oop_composition/) | OOP 2: composition | `device_connector.py` v1, `controller.py` v1 |
 | [L04](L04_rest_basics/) | REST client + CherryPy basics, project proposal | CherryPy base |
-| [L05](L05_rest_device/) | REST server for the device | `device_connector.py` v2 (REST) |
-| [L06](L06_catalog/) | Catalog | `catalog.py` + registration at start-up |
-| [L07](L07_mqtt_basics/) | MQTT basics, SenML | `mymqtt.py`, `senml.py` |
-| [L08](L08_mqtt_project/) | MQTT in the project | `device_connector.py` v3 (MQTT), controller service |
-| [L09](L09_thingspeak/) | ThingSpeak, third-party REST API | `thingspeak_adaptor.py` |
-| [L10](L10_telegram_basics/) | Telegram bots basics (telebot; telepot as reference) | `bot_basics.py` |
-| [L11](L11_telegram_project/) | Telegram bot in the project | `telegram_bot.py` |
-| [L12](L12_integration/) | Integration of the whole system | `smart_home/` complete |
-| [L13](L13_revision/) | Revision and exam practice | `exam_practice/` |
+| [L05](L05_catalog/) | Catalog | `catalog.py` + `device_connector.py` v2 (registers itself at start-up) |
+| [L06](L06_mqtt_basics/) | MQTT basics, SenML | `mymqtt.py`, `senml.py` |
+| [L07](L07_mqtt_project/) | MQTT in the project | `device_connector.py` v3 (MQTT), controller service |
+| [L08](L08_thingspeak/) | ThingSpeak, third-party REST API | `thingspeak_adaptor.py` |
+| [L09](L09_telegram_basics/) | Telegram bots basics (telebot; telepot as reference) | `bot_basics.py` |
+| [L10](L10_telegram_project/) | Telegram bot in the project | `telegram_bot.py` |
+| [L11](L11_integration/) | Integration of the whole system | `smart_home/` complete |
+| [L12](L12_revision/) | Revision and exam practice | `exam_practice/` |
 
 ## The complete project: `smart_home/`
 

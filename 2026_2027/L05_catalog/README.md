@@ -1,4 +1,4 @@
-# L06 - The Catalog (3 h)
+# L05 - The Catalog (3 h)
 
 ## Goals
 - Understand why an IoT system needs a catalog (service discovery) and design its REST resources.
@@ -19,12 +19,12 @@
 |---|---|
 | `catalog.json` | seed with broker, default_thresholds, houses, devices, users, thingspeak |
 | `catalog.py` | the service (Ex1, Ex2) |
-| `devices.py` | sensors and HVAC (as in L03/L05, given) |
-| `device_connector.py` | connector of one room with REST (as L05) + registration (Ex3) |
+| `devices.py` | sensors and HVAC (as in L03, given) |
+| `device_connector.py` | connector of one room (as L03: sensors + HVAC) + registration (Ex3) |
 | `catalog_client.py` | client script (Ex4) |
 | `extra_heartbeat/` | optional extra (see the end) |
 
-In `starter/` the store, the helpers (`read_json_body`, `require`, `upsert`) and everything from L05 are complete: only the `TODO` parts are missing.
+In `starter/` the store, the helpers (`read_json_body`, `require`, `upsert`) and the rest of the connector are complete: only the `TODO` parts are missing.
 
 ## Exercises
 
@@ -34,15 +34,14 @@ Implement `CatalogAPI.GET` (inside `with self.store.lock:`):
 A missing house, room or device gives **404**, an unknown URL gives 404. Use `self.store.find_house` / `find_room`.
 
 ### Ex2 - POST and PUT (`catalog.py`)
-- `POST /houses` (keys `house_id`, `rooms`), `POST /devices` (keys `device_id`, `house_id`, `room_id`, `rest_url`, `sensors`), `POST /users` (keys `chat_id`, `name`, `houses`): `require(...)` the keys (400), `upsert(...)`, for devices also `ensure_room(...)`, then `save()` and answer **201** with the object.
+- `POST /houses` (keys `house_id`, `rooms`), `POST /devices` (keys `device_id`, `house_id`, `room_id`, `sensors`), `POST /users` (keys `chat_id`, `name`, `houses`): `require(...)` the keys (400), `upsert(...)`, for devices also `ensure_room(...)`, then `save()` and answer **201** with the object. For `POST /devices` the answer is the *configuration of the device*: `{"device": <the object>, "broker": {host, port}, "base_topic": "smarthome/<house>/<room>", "interval": <seconds>}` (given as `self.device_config(obj)`; `default_interval` is in the seed). The device needs nothing else to start.
 - `PUT /houses/<h>/<r>/thresholds`: room not found = 404; body must be a non-empty object with only `t_min`, `t_max`, `h_max` and finite numbers, else 400; **partial update** (keys not sent stay as they are); after the update `t_min` must be lower than `t_max`, else 400 and nothing changes.
 - `PUT /thingspeak`: keys `channel_id`, `fields`; replaces the section.
 - Always `save()` after a change, inside the lock.
 
 ### Ex3 - Self-registering device connector (`device_connector.py`)
-At start-up the connector does `POST {catalog}/devices` with
-`{"device_id": "dc_<house>_<room>", "house_id", "room_id", "rest_url": "http://localhost:<port>", "sensors": ["temperature","humidity"]}`
-(function `register`). Show that **a brand new room appears in the catalog at runtime**: start `house1 garage 8085` and read `GET /houses/house1`: the room `garage` is there, with the default thresholds, and no line of code was changed.
+**Registering is the first thing a device does**: "I am here". In `main` the connector calls `dc.register(catalog)` before anything else: `POST {catalog}/devices` with
+`{"device_id": "dc_<house>_<room>", "house_id", "room_id", "sensors": ["temperature","humidity"]}` (method `DeviceConnector.register`). The catalog stores it and **answers with all the configuration the device needs** (broker, base topic, publish interval): `register` returns it, `main` prints it and uses `interval` (the `--interval` option overrides it). From L07 the broker of that answer is used to start MQTT: the only thing hard-coded in a device is the URL of the catalog. Show that **a brand new room appears in the catalog at runtime**: start `house1 garage` and read `GET /houses/house1`: the room `garage` is there, with the default thresholds, and no line of code was changed.
 
 ### Ex4 - Catalog client (`catalog_client.py`)
 With `requests`: list the houses and their rooms; read the thresholds of `house1/kitchen`; change `t_max` with a partial PUT; try an invalid PUT (`t_min` = 40) and print the 400; list the registered devices.
@@ -52,10 +51,10 @@ All commands from inside `solution/` (or `starter/`), using the course virtual e
 
 ```
 1) python catalog.py                                   # port 8080, state in catalog_state.json
-2) python device_connector.py house1 garage 8085       # registers itself in the catalog
+2) python device_connector.py house1 garage            # registers itself in the catalog
 3) python catalog_client.py
 ```
-Options: `python catalog.py 8120 my_state.json` (port, state file), `python device_connector.py house1 garage 8085 --catalog http://localhost:8120`, `python catalog_client.py http://localhost:8120`.
+Options: `python catalog.py 8120 my_state.json` (port, state file), `python device_connector.py house1 garage --catalog http://localhost:8120`, `python catalog_client.py http://localhost:8120`.
 
 ### curl examples
 The header `Content-Type: application/json` is required on POST/PUT with curl: without it curl sends the body as a web form and CherryPy answers 400 "Unexpected body parameters". (`requests` with `json=` sets it for you.)
@@ -65,7 +64,7 @@ curl localhost:8080/houses
 curl localhost:8080/houses/house1/kitchen/thresholds
 curl -X PUT -H "Content-Type: application/json" -d '{"t_max": 25}' localhost:8080/houses/house1/kitchen/thresholds
 curl -X PUT -H "Content-Type: application/json" -d '{"t_min": 40}' localhost:8080/houses/house1/kitchen/thresholds     # 400
-curl -X POST -H "Content-Type: application/json" -d '{"device_id":"dc_house1_attic","house_id":"house1","room_id":"attic","rest_url":"http://localhost:8086","sensors":["temperature"]}' localhost:8080/devices
+curl -X POST -H "Content-Type: application/json" -d '{"device_id":"dc_house1_attic","house_id":"house1","room_id":"attic","sensors":["temperature"]}' localhost:8080/devices
 curl localhost:8080/devices/dc_house1_attic
 curl -X POST -H "Content-Type: application/json" -d '{"chat_id":1,"name":"Anna","houses":["house1"]}' localhost:8080/users
 curl localhost:8080/houses/house9                                                                                      # 404

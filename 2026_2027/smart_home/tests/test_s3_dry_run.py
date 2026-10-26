@@ -94,7 +94,7 @@ def check_adaptor():
     adaptor.mqtt.subscribe("smarthome/+/+/temperature")
     adaptor.mqtt.subscribe("smarthome/+/+/hvac/state")
     time.sleep(0.5)
-    requests.put("http://localhost:8181/hvac", json={"command": "ON"}).raise_for_status()
+    adaptor.mqtt.publish("smarthome/house1/kitchen/hvac", {"command": "ON"})  # the connector answers on hvac/state
     wait_until(lambda: adaptor.pending.get(3) == 1, what="HVAC state from the connector")
     adaptor.mqtt.stop()
     print("adaptor: ok")
@@ -124,11 +124,21 @@ def check_bot():
     feed(button_update(ADA, "Ada", "house:house1"))
     assert out.last()[2] == ["room:house1:kitchen", "room:house1:bedroom"]
     feed(button_update(ADA, "Ada", "room:house1:kitchen"))
+    assert "no data yet" in out.last()[1]  # the bot has heard nothing from MQTT so far
+    # the bot's own MQTT feed: the connector's retained HVAC state arrives at once, measurements on the next round
+    app.mqtt = MyMQTT("bot_test", "localhost", MQTT_PORT, notifier=app)
+    app.mqtt.start()
+    for t in ("smarthome/+/+/temperature", "smarthome/+/+/hvac/state"):
+        app.mqtt.subscribe(t)
+    wait_until(lambda: ("house1", "kitchen") in app.latest, what="retained HVAC state in the bot")
+    app.notify("smarthome/house1/kitchen/temperature", senml_record("house1/kitchen", "temperature", "Cel", 21.4))
+    app.mqtt.stop()
+    feed(button_update(ADA, "Ada", "room:house1:kitchen"))
     chat, text, buttons = out.last()
-    assert "temperature:" in text and "HVAC: ON" in text and "t_min 19" in text, text
+    assert "temperature: 21.4 Cel" in text and "HVAC: " in text and "t_min 19" in text, text
     assert buttons == ["set:house1:kitchen:t_min", "set:house1:kitchen:t_max", "set:house1:kitchen:h_max"]
     feed(button_update(ADA, "Ada", "room:house1:bedroom"))
-    assert "device connector offline" in out.last()[1]
+    assert "no data yet" in out.last()[1]
 
     # change a threshold: button, then the value as a plain message
     feed(button_update(ADA, "Ada", "set:house1:kitchen:t_min"))
@@ -164,7 +174,7 @@ def main():
             procs.append(start_broker())
             procs.append(spawn("catalog.service", str(CATALOG_PORT), str(Path(tmp) / "state.json")))
             wait_until(lambda: requests.get(f"{CATALOG}/broker", timeout=1).ok, what="catalog")
-            procs.append(start_connector("house1", "kitchen", 8181))
+            procs.append(start_connector("house1", "kitchen"))
             check_adaptor()
             check_bot()
         finally:

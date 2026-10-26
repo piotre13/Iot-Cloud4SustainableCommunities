@@ -9,6 +9,8 @@ Default: port 8080, state file catalog_state.json (copied from the seed catalog.
   GET  /houses/<house_id>/<room_id>/thresholds
   PUT  /houses/<house_id>/<room_id>/thresholds   (body: any of t_min, t_max, h_max)
   GET  /devices    GET /devices/<device_id>  POST /devices      (upsert by device_id, creates house/room)
+                                            answer to the POST: {"device", "broker", "base_topic", "interval"},
+                                            all that the device needs to start (the device registers first)
   GET  /users                               POST /users           (upsert by chat_id)
   GET  /thingspeak                          PUT  /thingspeak      (body: {channel_id, fields})
 """
@@ -127,17 +129,24 @@ class CatalogAPI:
                 return data["thingspeak"]
         raise cherrypy.HTTPError(404, "Unknown endpoint")
 
+    def device_config(self, device):
+        """What a device needs to work, sent back when it registers: broker, its MQTT base topic, publish interval."""
+        return {"device": device, "broker": self.store.data["broker"],
+                "base_topic": f"smarthome/{device['house_id']}/{device['room_id']}",
+                "interval": self.store.data.get("default_interval", 10)}
+
     @cherrypy.tools.json_out()
     def POST(self, *uri):
-        obj = read_json_body()
+        obj = result = read_json_body()
         with self.store.lock:
             if uri == ("houses",):
                 require(obj, "house_id", "rooms")
                 upsert(self.store.data["houses"], obj, "house_id")
             elif uri == ("devices",):
-                require(obj, "device_id", "house_id", "room_id", "rest_url", "sensors")
+                require(obj, "device_id", "house_id", "room_id", "sensors")
                 upsert(self.store.data["devices"], obj, "device_id")
                 self.store.ensure_room(obj["house_id"], obj["room_id"])
+                result = self.device_config(obj)
             elif uri == ("users",):
                 require(obj, "chat_id", "name", "houses")
                 upsert(self.store.data["users"], obj, "chat_id")
@@ -145,7 +154,7 @@ class CatalogAPI:
                 raise cherrypy.HTTPError(404, "Unknown endpoint")
             self.store.save()
         cherrypy.response.status = 201
-        return obj
+        return result
 
     @cherrypy.tools.json_out()
     def PUT(self, *uri):
