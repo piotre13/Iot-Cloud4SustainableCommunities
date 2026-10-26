@@ -77,31 +77,3 @@ CherryPy server: `GET /` returns `Hello World`; `GET /?name=Anna` returns `Hello
 
 Typical mistakes of the 2025 version, fixed here: missing parameters silently replaced by default values (4) or giving `None`/an empty answer; no error for an unknown operation; division by zero checked on a string (`b != 0` with `b` = `"0"`) and answered with a text; mixed text and JSON responses; one class per operation instead of one resource.
 
-## Project proposal (last 20 minutes)
-
-Based on the official course guidelines (contacts: see the course page).
-
-**Teams**: 4 students, formed autonomously. Send team info (names, student IDs, emails) to the course teachers: `<teachers' emails: see course page>`.
-
-**What to deliver**
-1. Proposal, using `proposal_template.md`.
-2. Source code.
-3. Promo video (max 4 min, on YouTube).
-4. Demo video (max 10 min, every component shown working).
-5. Oral discussion with slides (max 20 min, each member presents their own part).
-
-**Proposal**: possible outcomes: accepted / minor review / major review / rejected. Development starts **only after acceptance**. Videos and code must be sent at least 5 days before the discussion.
-
-**Score**: the project is worth max 18/30. Bonus up to 2 points for tools or third-party platforms not presented in the course.
-
-**Immediate rejection** if the system is:
-- not made of microservices (a monolithic software);
-- not object-oriented.
-
-**Good practices**
-- A proper data format for exchange (JSON).
-- Scalability: add/remove devices, users, contexts **at run-time without changing the source code**.
-- Configuration files (JSON), not values hard-coded in the source.
-- Communication only over the internet: REST and/or MQTT.
-
-The course smart-home project is built exactly following these rules (catalog, device connectors, controller, ThingSpeak, Telegram bot): use it as a model.

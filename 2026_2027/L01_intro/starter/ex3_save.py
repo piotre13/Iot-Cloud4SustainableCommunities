@@ -2,13 +2,14 @@
 import json
 from pathlib import Path
 
-from ex2_config import CONFIG_PATH, load_config, get_thresholds
+from ex2_config import CONFIG_PATH, get_thresholds, load_config
 
 NEW_PATH = Path(__file__).parent / "config_modified.json"
 
 
 def save_config(config, path):
-    raise NotImplementedError("TODO Ex3: write config to path with json.dump(..., indent=2)")
+    with open(path, "w") as fp:
+        json.dump(config, fp, indent=4)
 
 
 if __name__ == "__main__":

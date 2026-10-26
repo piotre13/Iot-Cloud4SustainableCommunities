@@ -1,4 +1,4 @@
-from devices import TemperatureSensor, HumiditySensor, HVAC
+from devices import HVAC, HumiditySensor, TemperatureSensor
 
 MENU = """
 1) read sensors
@@ -8,10 +8,25 @@ q) quit"""
 
 
 def main():
-    sensors = [TemperatureSensor(), HumiditySensor()]
+    sensors = [TemperatureSensor(), HumiditySensor(), TemperatureSensor()]
     hvac = HVAC()
+    while True:
+        print(MENU + "\n")
+        command = input("insert command: ")
+        if command == "read sensors":
+            for sens in sensors:
+                print(sens.sense())
 
-    raise NotImplementedError("TODO Ex3: while True loop: print MENU, input(), then read sensors / HVAC ON / HVAC OFF / quit / invalid choice message")
+        elif command == "HVAC ON":
+            hvac.actuate("ON")
+            print(hvac.state)
+
+        elif command == "HVAC OFF":
+            hvac.actuate("OFF")
+            print(hvac.state)
+
+        elif command == "quit":
+            break
 
 
 if __name__ == "__main__":
