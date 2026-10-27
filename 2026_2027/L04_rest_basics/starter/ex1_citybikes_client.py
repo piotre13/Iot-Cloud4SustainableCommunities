@@ -2,26 +2,46 @@
 
 Usage: python ex1_citybikes_client.py [city]      (default: Milano)
 """
+
 import sys
 
 import requests
 
 
 class BikeCatalog:
-    def __init__(self, base_url="https://api.citybik.es"):
+    def __init__(self, base_url="https://api.citybik.es/v2/"):
         self.base_url = base_url
 
     def get_json(self, path):
         # TODO: GET base_url + path with timeout=10, call raise_for_status(), return the JSON
-        raise NotImplementedError("TODO Ex1: GET the path, check the status, return response.json()")
+        url = self.base_url + path
+        r = requests.get(url)
+        print(r.status_code)
+        return r.json()
+        # raise NotImplementedError("TODO Ex1: GET the path, check the status, return response.json()")
 
     def networks_of_city(self, city):
+        networks_list = []
+        data = self.get_json("networks")
+        for network in data['networks']:
+            if network['location']['city'] == city:
+                networks_list.append(network)
+
+        return networks_list
+
+
         # hint: path /v2/networks?fields=id,name,href,location ; compare location["city"] ignoring case
-        raise NotImplementedError("TODO Ex1: return the networks whose city matches")
+
+        # raise NotImplementedError("TODO Ex1: return the networks whose city matches")
 
     def stations_of_network(self, network):
         # hint: network["href"] is the path of the network; stations are in data["network"]["stations"]
-        raise NotImplementedError("TODO Ex1: return the list of stations of the network")
+        network_id = network ['id']
+        data = self.get_json(f'networks/{network_id}')
+        return data['network']['stations']
+        # raise NotImplementedError(
+        #     "TODO Ex1: return the list of stations of the network"
+        # )
 
 
 if __name__ == "__main__":
@@ -36,8 +56,10 @@ if __name__ == "__main__":
             print(f"\n{network['name']} - {len(stations)} stations")
             for station in stations:
                 # some networks do not publish these values: they are None
-                print(f"  {station['name']}: free bikes={station['free_bikes']}, "
-                      f"empty slots={station['empty_slots']}")
+                print(
+                    f"  {station['name']}: free bikes={station['free_bikes']}, "
+                    f"empty slots={station['empty_slots']}"
+                )
     except requests.exceptions.Timeout:
         print("The server did not answer in 10 seconds")
     except requests.exceptions.HTTPError as err:

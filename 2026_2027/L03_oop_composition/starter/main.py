@@ -11,9 +11,23 @@ from device_connector import DeviceConnector
 from devices import HVAC, HumiditySensor, TemperatureSensor
 
 
-def build_rooms(path="config.json"):
-    raise NotImplementedError("TODO Ex7: read config.json; for every room build a DeviceConnector (random sensors + HVAC) and a Controller; return a list of (connector, controller)")
+def build_rooms(path="/Users/pietrorandomazzarino/Documents/Projects/Iot-Cloud4SustainableCommunities/2026_2027/L03_oop_composition/starter/config.json"):
+    with open(path, 'r') as fp:
+        rooms_config = json.load(fp)
+    rooms = []
+    for house in rooms_config['houses']:
+        for room in house['rooms']:
+            device_connector = DeviceConnector(house['house_id'],room['room_id'],[TemperatureSensor(),HumiditySensor()],HVAC())
+            controller = Controller(room['thresholds'])
+            rooms.append((device_connector,controller))
+    
+    return rooms
 
+
+    
+    
+    # raise NotImplementedError("TODO Ex7: read config.json; for every room build a DeviceConnector (random sensors + HVAC) and a Controller; return a list of (connector, controller)")
+    
 
 def main():
     cycles = int(sys.argv[1]) if len(sys.argv) > 1 else 3
@@ -32,4 +46,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    a = main()

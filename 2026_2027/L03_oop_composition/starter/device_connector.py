@@ -17,7 +17,7 @@ class DeviceConnector:
         for sens in self.sensors:
             # val_dict = {sens.name : sens.sense()}
             self.latest[sens.name] = sens.sense()
-        
+
         return self.latest
 
         # raise NotImplementedError(
@@ -27,17 +27,14 @@ class DeviceConnector:
     def actuate(self, command):
         self.hvac.actuate(command)
 
-        #raise NotImplementedError("TODO Ex5: forward the command to the HVAC")
+        # raise NotImplementedError("TODO Ex5: forward the command to the HVAC")
 
     def status(self):
-        self.status_dict['house'] = self.house_id
-        self.status_dict['room'] = self.room_id
-        self.status_dict['latest'] = self.read_sensors()
-        self.status_dict['HVAC_state'] = self.hvac.name
-        raise NotImplementedError(
-            "TODO Ex5: return a dict with house, room, latest and the HVAC state"
-        )
-
-
-
-
+        self.status_dict["house"] = self.house_id
+        self.status_dict["room"] = self.room_id
+        self.status_dict["latest"] = self.latest
+        self.status_dict["HVAC_state"] = self.hvac.name
+        return self.status_dict
+        # raise NotImplementedError(
+        #     "TODO Ex5: return a dict with house, room, latest and the HVAC state"
+        # )
