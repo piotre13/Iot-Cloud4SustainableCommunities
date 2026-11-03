@@ -33,5 +33,5 @@ The course teaches how to design IoT platforms as Python microservices, step by 
 
 | Folder | Description |
 |---|---|
-| [`2026_2027/`](2026_2027/README.md) | Academic year 2026/2027: lessons `L01`–`L13` (each with `starter/` and `solution/`) and the `smart_home/` example project |
+| [`2026_2027/`](2026_2027/README.md) | Academic year 2026/2027: lessons `L01`–`L12` (each with `starter/` and `solution/`) and the `smart_home/` example project |
 | [`2025_2026/`](2025_2026/) | Academic year 2025/2026 |
