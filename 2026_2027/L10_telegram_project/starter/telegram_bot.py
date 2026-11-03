@@ -4,7 +4,7 @@ change thresholds, receive humidity alerts.
 Run:  python telegram_bot.py [--catalog URL]
 Needs TELEGRAM_TOKEN in 2026_2027/.env (create the bot with @BotFather).
 
-/start   choose the houses you follow (saved in the catalog: POST /users)
+/start   choose the houses you follow (saved in the catalog: POST /users, then PUT /users/<chat_id>)
 /houses  house -> room -> latest measurements, HVAC state, thresholds -> buttons to change them
 Alerts from smarthome/+/alerts go to the users who follow that house.
 The latest measurements and HVAC state come from MQTT: the bot keeps the last value of every room in memory.
@@ -57,7 +57,7 @@ class SmartHomeBot:
         raise NotImplementedError("TODO Ex1: send the houses of the catalog as buttons follow:<house>")
 
     def follow(self, call, house):
-        raise NotImplementedError("TODO Ex1: read or create the user, add the house, POST /users, confirm to the chat")
+        raise NotImplementedError("TODO Ex1: read or create the user, add the house, POST /users if new else PUT /users/<chat_id>, confirm to the chat")
 
     # --- Ex2: /houses, rooms, room view ---
     def on_houses(self, message):

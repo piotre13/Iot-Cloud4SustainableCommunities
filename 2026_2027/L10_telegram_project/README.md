@@ -18,7 +18,7 @@
 
 Flow:
 
-    /start -> buttons follow:<house> -> POST /users (chat_id, name, houses)
+    /start -> buttons follow:<house> -> POST /users (new user) or PUT /users/<chat_id> (name, houses)
     /houses -> buttons house:<h> -> buttons room:<h>:<r> -> room view
          (GET catalog thresholds + latest measurements/HVAC remembered from MQTT)
     room view -> button set:<h>:<r>:<key> -> waiting_value[chat]
@@ -39,7 +39,7 @@ Work in `starter/`, compare with `solution/`. Everything is already in place exc
 ## Exercises (all in `telegram_bot.py`)
 ### Ex1 - `/start` and follow
 `on_start`: ask the catalog for the houses (`GET /houses`) and send them as buttons `follow:<house>`.
-`follow`: find the user of this chat (`get_user`) or create `{"chat_id", "name", "houses": []}`, add the house if missing, `POST /users`, answer with the followed houses.
+`follow`: find the user of this chat (`get_user`) or create `{"chat_id", "name", "houses": []}`, add the house if missing, `POST /users` if the user is new, else `PUT /users/<chat_id>` (POST would answer 409), answer with the followed houses.
 
 ### Ex2 - `/houses`, rooms and room view
 `on_houses`: buttons `house:<house>` for the houses of this user (no user or no house -> "send /start").

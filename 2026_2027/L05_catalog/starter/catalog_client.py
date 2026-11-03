@@ -10,5 +10,5 @@ catalog = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8080"
 
 # TODO Ex4: 1. list houses and their rooms  2. read the thresholds of house1/kitchen
 #           3. change t_max with a partial PUT  4. try an invalid PUT (t_min=40) and print the status code
-#           5. list the registered devices
-raise NotImplementedError("TODO Ex4: write the five steps above with requests")
+#           5. list the registered devices  6. POST the existing house1 again and print the status code (409)
+raise NotImplementedError("TODO Ex4: write the six steps above with requests")

@@ -14,7 +14,7 @@ This lesson has no copy of the project: the solution **is** `smart_home/`. Here 
         |  broker, houses/rooms/thresholds, devices, users, |
         |  ThingSpeak field map                             |
         +---------------------------------------------------+
-          ^ POST /devices   ^ GET thresholds   ^ GET /thingspeak   ^ GET/PUT/POST (houses, users, thresholds)
+          ^ POST /devices     ^ GET thresholds   ^ GET /thingspeak   ^ GET/PUT/POST (houses, users, thresholds)
           |                 |                  |                   |
  +--------+-------+   +-----+------+   +-------+--------+   +------+-------+
  | device         |   | controller |   | thingspeak     |   | telegram     |
@@ -53,14 +53,16 @@ This lesson has no copy of the project: the solution **is** `smart_home/`. Here 
 |---|---|---|
 | GET | `/broker` | broker host and port |
 | GET | `/houses` | all houses with rooms and thresholds |
-| POST | `/houses` | create/replace a house (upsert by `house_id`) |
+| POST | `/houses` | create a house (409 if `house_id` exists) |
+| POST | `/houses/<house_id>/rooms` | create a room with the default thresholds (409 if it exists) |
 | GET | `/houses/<house_id>` | one house |
 | GET | `/houses/<house_id>/<room_id>/thresholds` | `t_min`, `t_max`, `h_max` of a room |
 | PUT | `/houses/<house_id>/<room_id>/thresholds` | change any of `t_min`, `t_max`, `h_max` |
-| GET | `/devices`, `/devices/<device_id>` | registered device connectors |
-| POST | `/devices` | register a device (upsert by `device_id`); creates house and room if missing |
+| GET | `/devices`, `/devices/<house_id>/<room_id>/<type>` | registered device connectors; the second is the registration answer again (for a restart) |
+| POST | `/devices` | register a device (body: `house_id`, `room_id`, `type`, `sensors`, `actuators`; 409 if it exists); creates house and room if missing |
 | GET | `/users` | Telegram users |
-| POST | `/users` | register a user (upsert by `chat_id`) |
+| POST | `/users` | create a user (409 if `chat_id` exists) |
+| PUT | `/users/<chat_id>` | update `name` and `houses` of a user |
 | GET | `/thingspeak` | channel id and `topic -> field` map |
 | PUT | `/thingspeak` | replace that map |
 
@@ -144,8 +146,8 @@ Watch `logs/controller.log`: from the next measurement the controller uses the n
 | OOP | `DeviceConnector`, `Controller`, `ThingSpeakAdaptor`, `SmartHomeBot`, `CatalogStore`/`CatalogAPI`; `Sensor` -> `RandomSensor`/`CsvSensor` and `HVAC` in `device_connector/devices.py`; `MyMQTT` in `common/` |
 | JSON configuration | `config/settings.json` (catalog URL), `catalog/catalog.json` (seed: broker, houses, thresholds, ThingSpeak map) |
 | Only REST and MQTT between services | REST: catalog and connector API; MQTT: all measurements, commands, alerts; no shared files or imports between services |
-| Service discovery | everybody asks the catalog for the broker (`common/config.py: get_broker`); the connector registers itself with `POST /devices` |
-| Runtime add of devices, users, houses | `POST /devices` creates house and room; `POST /users` from the bot's `/start`; Ex2 |
+| Service discovery | everybody asks the catalog for the broker (`common/config.py: get_broker`); the connector registers itself with `POST /devices` (after a restart: 409, then `GET /devices/<house>/<room>/<type>`) |
+| Runtime add of devices, users, houses | `POST /devices` creates house and room; `POST`/`PUT /users` from the bot's `/start`; Ex2 |
 | Configuration changed at runtime | thresholds via `PUT .../thresholds` (Ex3), read at each message by the controller |
 | Proper data format | SenML records in `common/senml.py` (`bn`, `bt`, and the list `e` with `n`, `u`, `t`, `v`) |
 | External services | ThingSpeak (REST, behind `thingspeak_adaptor/`), Telegram (`telegram_bot/`) |

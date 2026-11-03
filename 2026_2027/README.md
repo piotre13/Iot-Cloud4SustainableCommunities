@@ -67,8 +67,9 @@ Tests (from `smart_home/`, mosquitto needed): `python -m tests.test_catalog`, `t
 | HVAC state | `smarthome/{house}/{room}/hvac/state` | `{"state": "ON"}` |
 | Alerts | `smarthome/{house}/alerts` | `{"room": "kitchen", "msg": "humidity 78% > 70%"}` |
 
-Catalog endpoints: `GET /broker` · `GET|POST /houses` · `GET /houses/<house>` · `GET|PUT /houses/<house>/<room>/thresholds`
-· `GET|POST /devices` · `GET /devices/<id>` · `GET|POST /users` · `GET|PUT /thingspeak`.
+Catalog endpoints: `GET /broker` · `GET|POST /houses` · `GET /houses/<house>` · `POST /houses/<house>/rooms`
+· `GET|PUT /houses/<house>/<room>/thresholds` · `GET|POST /devices` · `GET /devices/<house>/<room>/<type>`
+· `GET|POST /users` · `PUT /users/<chat_id>` · `GET|PUT /thingspeak`. POST creates (409 if the id exists), PUT updates.
 
 ## Secrets
 

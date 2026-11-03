@@ -26,4 +26,8 @@ print("t_min=40:", response.status_code)
 
 # 5. list the registered devices
 for device in requests.get(f"{catalog}/devices", timeout=5).json():
-    print(device["device_id"], device["sensors"])
+    print(device)
+
+# 6. POST only creates: an existing house is refused with 409 (nothing is replaced)
+response = requests.post(f"{catalog}/houses", json={"house_id": "house1"}, timeout=5)
+print("house1 again:", response.status_code)

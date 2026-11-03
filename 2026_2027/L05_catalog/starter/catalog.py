@@ -4,14 +4,17 @@ Run:   python catalog.py [port] [state_file]
 Default: port 8080, state file catalog_state.json (copied from the seed catalog.json at first start).
 
   GET  /broker
-  GET  /houses                              POST /houses            (upsert by house_id)
-  GET  /houses/<house_id>
+  GET  /houses                              POST /houses            (body: {house_id}; 409 if it exists)
+  GET  /houses/<house_id>                   POST /houses/<house_id>/rooms   (body: {room_id}; default thresholds; 409 if it exists)
   GET  /houses/<house_id>/<room_id>/thresholds
   PUT  /houses/<house_id>/<room_id>/thresholds   (body: any of t_min, t_max, h_max)
-  GET  /devices    GET /devices/<device_id>  POST /devices      (upsert by device_id, creates house/room)
-                                            answer to the POST: {"device", "broker", "base_topic", "interval"},
-                                            all that the device needs to start (the device registers first)
-  GET  /users                               POST /users           (upsert by chat_id)
+  GET  /devices                             POST /devices           (body: {house_id, room_id, type, sensors, actuators}:
+                                            "I am here". Creates house/room if new; 409 if the device exists)
+                                            answer: {"device", "broker", "base_topic", "interval"}, all that the
+                                            device needs to start (the device registers first)
+  GET  /devices/<house_id>/<room_id>/<type>   the same answer, for a device that restarts (its POST got 409)
+  GET  /users                               POST /users           (body: {chat_id, name, houses}; 409 if it exists)
+                                            PUT  /users/<chat_id> (body: {name, houses}; 404 if unknown)
   GET  /thingspeak                          PUT  /thingspeak      (body: {channel_id, fields})
 """
 import json
@@ -55,6 +58,13 @@ class CatalogStore:
             return None
         return next((r for r in house["rooms"] if r["room_id"] == room_id), None)
 
+    def find_device(self, house_id, room_id, device_type):
+        return next((d for d in self.data["devices"]
+                     if (d["house_id"], d["room_id"], d["type"]) == (house_id, room_id, device_type)), None)
+
+    def new_room(self, room_id):
+        return {"room_id": room_id, "thresholds": dict(self.data["default_thresholds"])}
+
     def ensure_room(self, house_id, room_id):
         """Create house and room with the default thresholds if they are missing."""
         house = self.find_house(house_id)
@@ -63,7 +73,7 @@ class CatalogStore:
             self.data["houses"].append(house)
         room = self.find_room(house_id, room_id)
         if room is None:
-            room = {"room_id": room_id, "thresholds": dict(self.data["default_thresholds"])}
+            room = self.new_room(room_id)
             house["rooms"].append(room)
         return room
 
@@ -83,12 +93,10 @@ def require(obj, *keys):
         raise cherrypy.HTTPError(400, f"Missing keys: {missing}")
 
 
-def upsert(items, obj, key):
-    """Replace the item with the same key, or append the new one."""
-    for i, item in enumerate(items):
-        if item[key] == obj[key]:
-            items[i] = obj
-            return
+def create(items, obj, key):
+    """Append the new item: 409 if one with the same key already exists (nothing is replaced)."""
+    if any(item[key] == obj[key] for item in items):
+        raise cherrypy.HTTPError(409, f"{key} {obj[key]} already exists")
     items.append(obj)
 
 
@@ -100,7 +108,7 @@ class CatalogAPI:
 
     @cherrypy.tools.json_out()
     def GET(self, *uri):
-        raise NotImplementedError("TODO Ex1: answer every GET endpoint listed in the module docstring (data, 404 if not found), inside the lock")
+        raise NotImplementedError("TODO Ex1: answer every GET endpoint listed in the module docstring (data, 404 if not found; a device: the answer self.device_config(device)), inside the lock")
 
     def device_config(self, device):
         """What a device needs to work, sent back when it registers: broker, its MQTT base topic, publish interval."""
@@ -110,11 +118,11 @@ class CatalogAPI:
 
     @cherrypy.tools.json_out()
     def POST(self, *uri):
-        raise NotImplementedError("TODO Ex2: houses/devices/users: require() the keys, upsert(), ensure_room() for devices, save(), status 201; answer with the object, for devices with self.device_config(obj)")
+        raise NotImplementedError("TODO Ex2: POST houses, houses/<h>/rooms, users, devices: require() the keys, create() or 409 if it exists, save(), status 201, answer with the new object (a device: ensure_room, answer self.device_config(device))")
 
     @cherrypy.tools.json_out()
     def PUT(self, *uri):
-        raise NotImplementedError("TODO Ex2: thresholds (404 room, 400 bad body, partial update, t_min < t_max) and thingspeak, then save()")
+        raise NotImplementedError("TODO Ex2: PUT thresholds (404 room, 400 bad body, partial update, t_min < t_max), users/<chat_id> (404), thingspeak, then save()")
 
 
 def main():

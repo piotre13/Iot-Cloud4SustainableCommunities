@@ -4,14 +4,17 @@ Run from smart_home/:   python -m catalog.service [port] [state_file]
 
 Endpoints
   GET  /broker
-  GET  /houses                              POST /houses            (upsert by house_id)
-  GET  /houses/<house_id>
+  GET  /houses                              POST /houses            (body: {house_id}; 409 if it exists)
+  GET  /houses/<house_id>                   POST /houses/<house_id>/rooms   (body: {room_id}; default thresholds; 409 if it exists)
   GET  /houses/<house_id>/<room_id>/thresholds
   PUT  /houses/<house_id>/<room_id>/thresholds   (body: any of t_min, t_max, h_max)
-  GET  /devices    GET /devices/<device_id>  POST /devices      (upsert by device_id, creates house/room)
-                                            answer to the POST: {"device", "broker", "base_topic", "interval"},
-                                            all that the device needs to start (the device registers first)
-  GET  /users                               POST /users           (upsert by chat_id)
+  GET  /devices                             POST /devices           (body: {house_id, room_id, type, sensors, actuators}:
+                                            "I am here". Creates house/room if new; 409 if the device exists)
+                                            answer: {"device", "broker", "base_topic", "interval"}, all that the
+                                            device needs to start (the device registers first)
+  GET  /devices/<house_id>/<room_id>/<type>   the same answer, for a device that restarts (its POST got 409)
+  GET  /users                               POST /users           (body: {chat_id, name, houses}; 409 if it exists)
+                                            PUT  /users/<chat_id> (body: {name, houses}; 404 if unknown)
   GET  /thingspeak                          PUT  /thingspeak      (body: {channel_id, fields})
 """
 import json
@@ -55,6 +58,13 @@ class CatalogStore:
             return None
         return next((r for r in house["rooms"] if r["room_id"] == room_id), None)
 
+    def find_device(self, house_id, room_id, device_type):
+        return next((d for d in self.data["devices"]
+                     if (d["house_id"], d["room_id"], d["type"]) == (house_id, room_id, device_type)), None)
+
+    def new_room(self, room_id):
+        return {"room_id": room_id, "thresholds": dict(self.data["default_thresholds"])}
+
     def ensure_room(self, house_id, room_id):
         """Create house and room with the default thresholds if they are missing."""
         house = self.find_house(house_id)
@@ -63,7 +73,7 @@ class CatalogStore:
             self.data["houses"].append(house)
         room = self.find_room(house_id, room_id)
         if room is None:
-            room = {"room_id": room_id, "thresholds": dict(self.data["default_thresholds"])}
+            room = self.new_room(room_id)
             house["rooms"].append(room)
         return room
 
@@ -83,11 +93,10 @@ def require(obj, *keys):
         raise cherrypy.HTTPError(400, f"Missing keys: {missing}")
 
 
-def upsert(items, obj, key):
-    for i, item in enumerate(items):
-        if item[key] == obj[key]:
-            items[i] = obj
-            return
+def create(items, obj, key):
+    """Append the new item: 409 if one with the same key already exists (nothing is replaced)."""
+    if any(item[key] == obj[key] for item in items):
+        raise cherrypy.HTTPError(409, f"{key} {obj[key]} already exists")
     items.append(obj)
 
 
@@ -118,11 +127,11 @@ class CatalogAPI:
                 return room["thresholds"]
             if uri == ("devices",):
                 return data["devices"]
-            if len(uri) == 2 and uri[0] == "devices":
-                device = next((d for d in data["devices"] if d["device_id"] == uri[1]), None)
+            if len(uri) == 4 and uri[0] == "devices":
+                device = self.store.find_device(*uri[1:])
                 if device is None:
-                    raise cherrypy.HTTPError(404, f"Device {uri[1]} not found")
-                return device
+                    raise cherrypy.HTTPError(404, f"Device {'/'.join(uri[1:])} not found")
+                return self.device_config(device)
             if uri == ("users",):
                 return data["users"]
             if uri == ("thingspeak",):
@@ -137,19 +146,33 @@ class CatalogAPI:
 
     @cherrypy.tools.json_out()
     def POST(self, *uri):
-        obj = result = read_json_body()
+        obj = read_json_body()
         with self.store.lock:
             if uri == ("houses",):
-                require(obj, "house_id", "rooms")
-                upsert(self.store.data["houses"], obj, "house_id")
+                require(obj, "house_id")
+                result = {"house_id": obj["house_id"], "rooms": []}  # rooms are added with POST .../rooms
+                create(self.store.data["houses"], result, "house_id")
+            elif len(uri) == 3 and uri[0] == "houses" and uri[2] == "rooms":
+                require(obj, "room_id")
+                house = self.store.find_house(uri[1])
+                if house is None:
+                    raise cherrypy.HTTPError(404, f"House {uri[1]} not found")
+                result = self.store.new_room(obj["room_id"])
+                create(house["rooms"], result, "room_id")
             elif uri == ("devices",):
-                require(obj, "device_id", "house_id", "room_id", "sensors")
-                upsert(self.store.data["devices"], obj, "device_id")
-                self.store.ensure_room(obj["house_id"], obj["room_id"])
-                result = self.device_config(obj)
+                require(obj, "house_id", "room_id", "type", "sensors", "actuators")
+                if not isinstance(obj["sensors"], list) or not isinstance(obj["actuators"], list):
+                    raise cherrypy.HTTPError(400, "sensors and actuators must be lists")
+                if self.store.find_device(obj["house_id"], obj["room_id"], obj["type"]) is not None:
+                    raise cherrypy.HTTPError(409, "Device already registered")  # a restart: GET its answer
+                device = {k: obj[k] for k in ("house_id", "room_id", "type", "sensors", "actuators")}
+                self.store.data["devices"].append(device)
+                self.store.ensure_room(device["house_id"], device["room_id"])
+                result = self.device_config(device)
             elif uri == ("users",):
                 require(obj, "chat_id", "name", "houses")
-                upsert(self.store.data["users"], obj, "chat_id")
+                result = obj
+                create(self.store.data["users"], obj, "chat_id")
             else:
                 raise cherrypy.HTTPError(404, "Unknown endpoint")
             self.store.save()
@@ -174,6 +197,13 @@ class CatalogAPI:
                     raise cherrypy.HTTPError(400, "t_min must be lower than t_max")
                 room["thresholds"] = new
                 result = room["thresholds"]
+            elif len(uri) == 2 and uri[0] == "users":
+                require(obj, "name", "houses")
+                user = next((u for u in self.store.data["users"] if str(u["chat_id"]) == uri[1]), None)
+                if user is None:
+                    raise cherrypy.HTTPError(404, f"User {uri[1]} not found")
+                user.update(name=obj["name"], houses=obj["houses"])
+                result = user
             elif uri == ("thingspeak",):
                 require(obj, "channel_id", "fields")
                 self.store.data["thingspeak"] = obj

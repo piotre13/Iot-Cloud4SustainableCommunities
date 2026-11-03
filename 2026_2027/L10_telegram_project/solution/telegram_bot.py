@@ -4,7 +4,7 @@ change thresholds, receive humidity alerts.
 Run:  python telegram_bot.py [--catalog URL]
 Needs TELEGRAM_TOKEN in 2026_2027/.env (create the bot with @BotFather).
 
-/start   choose the houses you follow (saved in the catalog: POST /users)
+/start   choose the houses you follow (saved in the catalog: POST /users, then PUT /users/<chat_id>)
 /houses  house -> room -> latest measurements, HVAC state, thresholds -> buttons to change them
 Alerts from smarthome/+/alerts go to the users who follow that house.
 The latest measurements and HVAC state come from MQTT: the bot keeps the last value of every room in memory.
@@ -60,10 +60,18 @@ class SmartHomeBot:
 
     def follow(self, call, house):
         chat_id = call.message.chat.id
-        user = self.get_user(chat_id) or {"chat_id": chat_id, "name": call.from_user.first_name, "houses": []}
+        user = self.get_user(chat_id)
+        is_new = user is None
+        if is_new:
+            user = {"chat_id": chat_id, "name": call.from_user.first_name, "houses": []}
         if house not in user["houses"]:
             user["houses"].append(house)
-        requests.post(f"{self.catalog}/users", json=user, timeout=5).raise_for_status()
+        # POST creates (409 if it exists), PUT updates the user we already have
+        if is_new:
+            r = requests.post(f"{self.catalog}/users", json=user, timeout=5)
+        else:
+            r = requests.put(f"{self.catalog}/users/{chat_id}", json=user, timeout=5)
+        r.raise_for_status()
         self.bot.send_message(chat_id, f"You follow: {', '.join(user['houses'])}. Now try /houses")
 
     # --- Ex2: /houses, rooms, room view ---

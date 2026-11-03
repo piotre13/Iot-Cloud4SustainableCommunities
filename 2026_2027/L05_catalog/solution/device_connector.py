@@ -3,8 +3,10 @@ No REST server: measurements and commands will travel over MQTT in L07 (the cata
 
 Usage: python device_connector.py house1 garage [--catalog http://localhost:8080] [--interval 5]
 
-The first thing a device does is to register: POST /devices "I am here". The catalog stores it and answers with
-everything the device needs: {"device", "broker": {host, port}, "base_topic", "interval"}.
+The first thing a device does is to register: POST /devices "I am here": house, room and type are the only
+things hard-coded in the device, which then tells the catalog what it handles ({"sensors": [...],
+"actuators": [...]}). The catalog stores it and answers with everything the device needs:
+{"device", "broker": {host, port}, "base_topic", "interval"}.
 """
 import argparse
 import threading
@@ -12,6 +14,8 @@ import threading
 import requests
 
 from devices import HVAC, HumiditySensor, TemperatureSensor
+
+DEVICE_TYPE = "device_connector"
 
 
 class DeviceConnector:
@@ -25,12 +29,15 @@ class DeviceConnector:
         return {s.name: s.sense() for s in self.sensors}
 
     def register(self, catalog):
-        """Tell the catalog who we are (it creates the house/room if new) and return its answer (the config)."""
-        registration = {"device_id": f"dc_{self.house_id}_{self.room_id}", "house_id": self.house_id,
-                        "room_id": self.room_id, "sensors": [s.name for s in self.sensors]}
-        r = requests.post(f"{catalog}/devices", json=registration, timeout=5)
+        """Tell the catalog who we are (it creates the house/room if new) and return its answer (the config).
+        409 = already registered (a restart): the same answer is read with a GET."""
+        device = {"house_id": self.house_id, "room_id": self.room_id, "type": DEVICE_TYPE,
+                  "sensors": [s.name for s in self.sensors], "actuators": [self.hvac.name]}
+        r = requests.post(f"{catalog}/devices", json=device, timeout=5)
+        if r.status_code == 409:  # already registered (a restart): the same answer is there to read
+            r = requests.get(f"{catalog}/devices/{self.house_id}/{self.room_id}/{DEVICE_TYPE}", timeout=5)
         r.raise_for_status()
-        print(f"Registered {registration['device_id']} in the catalog")
+        print(f"Registered {self.house_id}/{self.room_id} in the catalog")
         return r.json()
 
 

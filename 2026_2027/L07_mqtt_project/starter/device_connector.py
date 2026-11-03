@@ -21,6 +21,8 @@ from mymqtt import MyMQTT
 from senml import senml_record
 from devices import HVAC, make_sensors
 
+DEVICE_TYPE = "device_connector"
+
 
 class DeviceConnector:
     def __init__(self, house_id, room_id, sensors, hvac):
@@ -35,13 +37,15 @@ class DeviceConnector:
     def register(self, catalog):
         """POST /devices: "I am here". The catalog stores us (and creates the house/room if new) and answers
         with everything we need: {"device", "broker": {host, port}, "base_topic", "interval"}."""
-        registration = {"device_id": f"dc_{self.house_id}_{self.room_id}", "house_id": self.house_id,
-                        "room_id": self.room_id, "sensors": [s.name for s in self.sensors]}
-        r = requests.post(f"{catalog}/devices", json=registration, timeout=5)
+        device = {"house_id": self.house_id, "room_id": self.room_id, "type": DEVICE_TYPE,
+                  "sensors": [s.name for s in self.sensors], "actuators": [self.hvac.name]}
+        r = requests.post(f"{catalog}/devices", json=device, timeout=5)
+        if r.status_code == 409:  # already registered (a restart): the same answer is there to read
+            r = requests.get(f"{catalog}/devices/{self.house_id}/{self.room_id}/{DEVICE_TYPE}", timeout=5)
         r.raise_for_status()
         config = r.json()
         self.base_topic = config["base_topic"]
-        print(f"Registered {registration['device_id']} in the catalog: {config}")
+        print(f"Registered {self.house_id}/{self.room_id} in the catalog: {config}")
         return config
 
     # --- sensors -> MQTT ---

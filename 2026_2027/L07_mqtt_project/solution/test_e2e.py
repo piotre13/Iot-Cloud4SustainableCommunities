@@ -63,7 +63,7 @@ class Watcher(Collector):
 
 def start_connector(house, room):
     proc = spawn("device_connector.py", house, room, "--interval", "3600", "--catalog", CATALOG)
-    wait_until(lambda: requests.get(f"{CATALOG}/devices/dc_{house}_{room}", timeout=1).ok, what=f"{house}/{room} registration")
+    wait_until(lambda: requests.get(f"{CATALOG}/devices/{house}/{room}/device_connector", timeout=1).ok, what=f"{house}/{room} registration")
     return proc
 
 
